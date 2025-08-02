@@ -3,7 +3,7 @@ import { Container, Box, Alert, Typography, Paper } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Header } from './components/Header';
-import { PredictionForm } from './components/PredictionForm';
+import { EnhancedPredictionForm } from './components/enhanced/EnhancedPredictionForm';
 import { PredictionResult } from './components/PredictionResult';
 import { predictionApi } from './services/api';
 import { PredictionRequest, PredictionResponse } from './types/api';
@@ -190,7 +190,7 @@ function App() {
                 border: '1px solid rgba(255, 255, 255, 0.1)',
               }}
             >
-              <PredictionForm onSubmit={handlePrediction} loading={loading} />
+              <EnhancedPredictionForm onSubmit={handlePrediction} loading={loading} />
             </Paper>
             
             <PredictionResult 

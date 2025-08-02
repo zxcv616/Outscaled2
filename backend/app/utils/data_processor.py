@@ -439,8 +439,80 @@ class DataProcessor:
             'avg_gold_diff_15': 0, 'avg_xp_diff_15': 0, 'avg_cs_diff_15': 0
         }
     
+    def _infer_most_recent_team(self, player_name: str, match_date: str = None) -> str:
+        """
+        Infer the most recent team for a player based on their match history.
+        
+        Args:
+            player_name: Name of the player
+            match_date: Optional match date to use as reference point
+            
+        Returns:
+            Most recent team name for the player
+        """
+        if self.combined_data is None:
+            logger.warning("No data available for team inference")
+            return None
+        
+        # Filter data for the specific player
+        player_data = self.combined_data[self.combined_data['playername'] == player_name].copy()
+        
+        if player_data.empty:
+            logger.warning(f"No data found for player: {player_name}")
+            return None
+        
+        # Convert date column to datetime for proper sorting
+        player_data['date'] = pd.to_datetime(player_data['date'], errors='coerce')
+        player_data = player_data.dropna(subset=['date'])
+        
+        if player_data.empty:
+            logger.warning(f"No valid dates found for player: {player_name}")
+            return None
+        
+        # If match_date is provided, use it as reference point
+        if match_date:
+            try:
+                reference_date = pd.to_datetime(match_date)
+                # Get data before or on the reference date
+                player_data = player_data[player_data['date'] <= reference_date]
+                if player_data.empty:
+                    logger.warning(f"No data found for {player_name} before {match_date}")
+                    return None
+            except Exception as e:
+                logger.warning(f"Invalid match_date format: {match_date}, using most recent data")
+        
+        # Sort by date and get the most recent match
+        player_data = player_data.sort_values('date', ascending=False)
+        most_recent_match = player_data.iloc[0]
+        
+        inferred_team = most_recent_match['teamname']
+        match_date = most_recent_match['date'].strftime('%Y-%m-%d')
+        
+        logger.info(f"Inferred team for {player_name}: {inferred_team} (from match on {match_date})")
+        return inferred_team
+
     def process_request(self, request, strict_mode: bool = False) -> Dict[str, Any]:
         """Process the prediction request and return engineered features with tier information"""
+        
+        # Auto-infer team if not provided
+        if not request.team or request.team.strip() == "":
+            if len(request.player_names) == 1:
+                # Single player - infer their team
+                inferred_team = self._infer_most_recent_team(request.player_names[0], request.match_date)
+                if inferred_team:
+                    request.team = inferred_team
+                    logger.warning(f"No team provided for {request.player_names[0]}. Auto-inferred: {inferred_team}")
+                else:
+                    logger.warning(f"Could not infer team for {request.player_names[0]}. Proceeding without team filtering.")
+            else:
+                # Multiple players - try to infer team from first player
+                inferred_team = self._infer_most_recent_team(request.player_names[0], request.match_date)
+                if inferred_team:
+                    request.team = inferred_team
+                    logger.warning(f"No team provided for combo prediction. Using team from {request.player_names[0]}: {inferred_team}")
+                else:
+                    logger.warning(f"Could not infer team for combo prediction. Proceeding without team filtering.")
+        
         # Use tiered filtering system
         tier_result = self.filter_player_data_with_tiers(
             player_names=request.player_names,

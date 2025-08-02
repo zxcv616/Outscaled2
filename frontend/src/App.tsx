@@ -96,7 +96,14 @@ function App() {
       const prediction = await predictionApi.getPrediction(request);
       setResult(prediction);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      console.error('Prediction error:', err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else if (typeof err === 'string') {
+        setError(err);
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }

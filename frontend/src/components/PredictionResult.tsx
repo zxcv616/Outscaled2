@@ -328,6 +328,7 @@ export const PredictionResult: React.FC<PredictionResultProps> = ({ result, requ
               propValue={result.prop_value}
               confidenceInterval={result.confidence_interval}
               prediction={result.prediction}
+              confidence={result.confidence}
             />
           </Paper>
         </Box>

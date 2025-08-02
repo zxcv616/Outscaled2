@@ -13,17 +13,28 @@ interface PredictionCurveProps {
   propValue: number;
   confidenceInterval: [number, number];
   prediction: 'OVER' | 'UNDER';
+  confidence: number;
 }
 
 const PredictionCurve: React.FC<PredictionCurveProps> = ({ 
   expectedStat, 
   propValue, 
   confidenceInterval, 
-  prediction 
+  prediction,
+  confidence
 }) => {
   const isOver = prediction === 'OVER';
   const gap = Math.abs(expectedStat - propValue);
   const gapPercentage = (gap / propValue) * 100;
+
+  // Calculate prediction strength based on confidence
+  const getPredictionStrength = (confidence: number) => {
+    if (confidence >= 85) return { label: 'Strong', color: 'success' as const };
+    if (confidence >= 65) return { label: 'Moderate', color: 'warning' as const };
+    return { label: 'Weak', color: 'error' as const };
+  };
+
+  const strength = getPredictionStrength(confidence);
 
   return (
     <Box>
@@ -166,8 +177,8 @@ const PredictionCurve: React.FC<PredictionCurveProps> = ({
               </Typography>
               <Chip
                 icon={isOver ? <TrendingUp /> : <TrendingDown />}
-                label={gapPercentage > 20 ? 'Strong' : gapPercentage > 10 ? 'Moderate' : 'Weak'}
-                color={gapPercentage > 20 ? 'success' : gapPercentage > 10 ? 'warning' : 'error'}
+                label={strength.label}
+                color={strength.color}
                 size="small"
                 sx={{ fontWeight: 600 }}
               />

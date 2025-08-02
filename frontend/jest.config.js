@@ -35,19 +35,11 @@ module.exports = {
     '^axios$': '<rootDir>/__mocks__/axiosMock.js'
   },
   
-  // Module transformation ignore patterns - allow axios to be transformed
-  transformIgnorePatterns: [
-    'node_modules/(?!(axios)/)'
-  ],
-  
   // Setup files
   setupFilesAfterEnv: [
     '<rootDir>/src/setupTests.ts',
     '<rootDir>/__mocks__/setupAxiosMock.js'
   ],
-  
-  // Setup files for global test environment
-  setupFiles: ['<rootDir>/src/setupTests.ts'],
   
   // The test environment that will be used for testing
   testEnvironment: 'jsdom',
@@ -74,25 +66,16 @@ module.exports = {
   // Indicates whether each individual test should be reported during the run
   verbose: true,
   
-  // Extensions to treat as ES modules
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
-  
-  // Global setup for ES modules
-  globals: {
-    'ts-jest': {
-      useESM: true,
-    },
-  },
-  
   // Transform configuration for handling ES modules
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
     '^.+\\.(js|jsx)$': 'babel-jest'
   },
   
-  // Mock axios globally
-  setupFilesAfterEnv: [
-    '<rootDir>/src/setupTests.ts',
-    '<rootDir>/__mocks__/setupAxiosMock.js'
-  ],
+  // Global setup for ES modules
+  globals: {
+    'ts-jest': {
+      useESM: false,
+    },
+  },
 }; 

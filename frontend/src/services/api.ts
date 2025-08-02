@@ -17,10 +17,27 @@ export const predictionApi = {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const apiError = error.response?.data as ApiError;
-        throw new Error(apiError?.detail || 'Failed to get prediction');
+        // Handle different types of axios errors
+        if (error.response) {
+          // Server responded with error status
+          const apiError = error.response.data as ApiError;
+          const errorMessage = apiError?.detail || 
+                             apiError?.message || 
+                             `Server error: ${error.response.status}`;
+          throw new Error(errorMessage);
+        } else if (error.request) {
+          // Request was made but no response received
+          throw new Error('No response from server. Please check your connection.');
+        } else {
+          // Something else happened
+          throw new Error('Network error occurred');
+        }
       }
-      throw new Error('Network error');
+      // Handle non-axios errors
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('An unexpected error occurred');
     }
   },
 

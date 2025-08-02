@@ -5,7 +5,7 @@ export interface PredictionRequest {
   map_range: [number, number];
   opponent: string;
   tournament: string;
-  team: string;
+  team?: string;  // Now optional - backend will auto-infer if not provided
   match_date: string;
   position_roles: string[];
   strict_mode?: boolean;
@@ -68,5 +68,7 @@ export interface PredictionResponse {
 }
 
 export interface ApiError {
-  detail: string;
+  detail?: string;
+  message?: string;
+  status_code?: number;
 } 

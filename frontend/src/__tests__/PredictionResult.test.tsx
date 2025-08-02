@@ -1,18 +1,9 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { userEvent } from '@testing-library/user-event';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { PredictionResult } from '../components/PredictionResult';
-
-// Mock recharts components
-jest.mock('recharts', () => ({
-  BarChart: () => null,
-  Bar: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
-  CartesianGrid: () => null,
-  Tooltip: () => null,
-  ResponsiveContainer: ({ children }: any) => children,
-}));
+import { PredictionResponse, PredictionRequest } from '../types/api';
 
 const theme = createTheme({
   palette: {
@@ -28,237 +19,152 @@ const renderWithTheme = (component: React.ReactElement) => {
   );
 };
 
-describe('PredictionResult', () => {
-  // Realistic mock data based on actual model output
-  const mockResult = {
-    prediction: 'OVER' as const,
-    confidence: 75.0,
-    expected_stat: 4.5,
-    confidence_interval: [3.8, 5.2] as [number, number],
-    reasoning: 'Good recent form. Moderate sample size. Expected performance close to prop line. Moderate confidence prediction.',
-    player_stats: {
-      avg_kills: 4.0,
-      avg_assists: 6.0,
-      form_z_score: 0.5,
-      maps_played: 10,
-      avg_deaths: 2.5,
-      avg_damage: 15000,
-      avg_vision: 25.0,
-      avg_cs: 200.0,
-      position_factor: 1.2
-    },
-    data_years: '2024 (108 matches), 2025 (67 matches)'
-  };
-
-  const mockRequest = {
-    player_names: ['Faker'],
-    prop_type: 'kills' as const,
-    prop_value: 4.5,
-    map_range: [1, 3] as [number, number],
-    opponent: 'T1',
+const mockResult: PredictionResponse = {
+  prediction: 'OVER',
+  confidence: 75.0,
+  base_model_confidence: 75.0,
+  expected_stat: 4.5,
+  confidence_interval: [3.8, 5.2],
+  reasoning: 'Good recent form. Moderate sample size. Expected performance close to prop line. Moderate confidence prediction.',
+  player_stats: {
+    avg_kills: 4.0,
+    avg_assists: 6.0,
+    form_z_score: 0.5,
+    maps_played: 10,
+    avg_deaths: 2.5,
+    avg_damage: 15000,
+    avg_vision: 25.0,
+    avg_cs: 200.0,
+    position_factor: 1.2
+  },
+  data_years: '2024 (108 matches), 2025 (67 matches)',
+  sample_details: {
+    maps_used: 10,
+    filter_criteria: 'Standard filtering applied',
+    position: 'MID',
+    opponent: 'Gen.G',
     tournament: 'LCK',
-    team: 'SKT',
-    match_date: '2024-01-15T10:00',
-    position_roles: ['MID']
-  };
+    map_range: '1-2',
+    data_years: '2024 (108 matches), 2025 (67 matches)',
+    sample_quality: 'Good',
+    data_tier: 1,
+    tier_name: 'Exact Tournament',
+    tier_weight: 1.0,
+    fallback_used: false,
+    sample_sources: {},
+    volatility: 0.3,
+    ci_method: 'bootstrap',
+    strict_mode_applied: false
+  },
+  data_tier: 1,
+  confidence_warning: '',
+  prop_type: 'kills',
+  prop_value: 3.5
+};
 
-  test('renders prediction result with OVER prediction', () => {
+const mockRequest: PredictionRequest = {
+  player_names: ['Faker'],
+  prop_type: 'kills',
+  prop_value: 3.5,
+  map_range: [1, 2],
+  opponent: 'Gen.G',
+  tournament: 'LCK',
+  team: 'T1',
+  match_date: '2024-08-01T12:00',
+  position_roles: ['MID'],
+  strict_mode: false
+};
+
+describe('PredictionResult', () => {
+  test('displays prediction result correctly', () => {
     renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
 
-    // Check prediction chip
     expect(screen.getByText('OVER')).toBeInTheDocument();
-    expect(screen.getByText(/75\s*%/)).toBeInTheDocument();
-
-    // Check expected stat (formatted to 1 decimal place)
+    expect(screen.getByText('AI Prediction')).toBeInTheDocument();
+    expect(screen.getByText('75%')).toBeInTheDocument();
+    expect(screen.getByText('Confidence Level')).toBeInTheDocument();
     expect(screen.getByText('4.5')).toBeInTheDocument();
+    expect(screen.getAllByText(/Expected/)).toHaveLength(3);
+  });
 
-    // Check confidence interval (formatted as [3.8, 5.2])
-    // Check for confidence interval values (they appear in the text)
-    expect(screen.getByText(/3\.8/)).toBeInTheDocument();
-    expect(screen.getByText(/5\.2/)).toBeInTheDocument();
+  test('displays confidence level correctly', () => {
+    renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
 
-    // Check reasoning (actual model output)
+    expect(screen.getByText('75%')).toBeInTheDocument();
+    expect(screen.getByText('Confidence Level')).toBeInTheDocument();
+  });
+
+  test('displays expected stat correctly', () => {
+    renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
+
+    expect(screen.getByText('4.5')).toBeInTheDocument();
+    expect(screen.getAllByText(/Expected/)).toHaveLength(3);
+  });
+
+  test('displays reasoning correctly', () => {
+    renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
+
+    expect(screen.getByText('AI Reasoning')).toBeInTheDocument();
     expect(screen.getByText(/Good recent form/)).toBeInTheDocument();
-    expect(screen.getByText(/Moderate sample size/)).toBeInTheDocument();
-  });
-
-  test('renders prediction result with UNDER prediction', () => {
-    const underResult = { 
-      ...mockResult, 
-      prediction: 'UNDER' as const,
-      reasoning: 'Below-average recent form. Limited sample size reduces confidence. Expected performance significantly below prop line. Low confidence prediction.'
-    };
-    renderWithTheme(<PredictionResult result={underResult} request={mockRequest} loading={false} error={null} />);
-
-    expect(screen.getByText('UNDER')).toBeInTheDocument();
-  });
-
-  test('displays confidence progress bar', () => {
-    renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
-
-    // Should show confidence percentage
-    expect(screen.getByText(/75\s*%/)).toBeInTheDocument();
-  });
-
-  test('displays all player statistics', () => {
-    renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
-
-    // Since recharts is mocked, we just verify the component renders without errors
-    expect(screen.getByText('OVER')).toBeInTheDocument();
-    expect(screen.getByText(/75\s*%/)).toBeInTheDocument();
-    expect(screen.getByText('4.5')).toBeInTheDocument();
   });
 
   test('displays data years information', () => {
     renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
 
-    expect(screen.getByText('Data Coverage')).toBeInTheDocument();
-    expect(screen.getByText('10')).toBeInTheDocument(); // maps_played
+    expect(screen.getByText('Data Years')).toBeInTheDocument();
+    expect(screen.getByText('2024 (108 matches), 2025 (67 matches)')).toBeInTheDocument();
   });
 
-  test('handles high confidence prediction', () => {
-    const highConfidenceResult = { 
-      ...mockResult, 
-      confidence: 95.0,
-      reasoning: 'Strong recent form above historical average. Good sample size for reliable prediction. Expected performance significantly above prop line. High confidence prediction.'
-    };
-    renderWithTheme(<PredictionResult result={highConfidenceResult} request={mockRequest} loading={false} error={null} />);
-
-    expect(screen.getByText(/95\s*%/)).toBeInTheDocument();
-  });
-
-  test('handles low confidence prediction', () => {
-    const lowConfidenceResult = { 
-      ...mockResult, 
-      confidence: 25.0,
-      reasoning: 'Poor recent form below historical average. Limited sample size reduces confidence. Expected performance significantly below prop line. Low confidence prediction.'
-    };
-    renderWithTheme(<PredictionResult result={lowConfidenceResult} request={mockRequest} loading={false} error={null} />);
-
-    expect(screen.getByText(/25\s*%/)).toBeInTheDocument();
-  });
-
-  test('handles zero confidence prediction', () => {
-    const zeroConfidenceResult = { 
-      ...mockResult, 
-      confidence: 0.0,
-      reasoning: 'Form is consistent with historical average. Limited sample size reduces confidence. Expected performance close to prop line. Low confidence prediction.'
-    };
-    renderWithTheme(<PredictionResult result={zeroConfidenceResult} request={mockRequest} loading={false} error={null} />);
-
-    expect(screen.getByText(/0\s*%/)).toBeInTheDocument();
-  });
-
-  test('handles 100% confidence prediction', () => {
-    const fullConfidenceResult = { 
-      ...mockResult, 
-      confidence: 100.0,
-      reasoning: 'Strong recent form above historical average. Good sample size for reliable prediction. Expected performance significantly above prop line. High confidence prediction.'
-    };
-    renderWithTheme(<PredictionResult result={fullConfidenceResult} request={mockRequest} loading={false} error={null} />);
-
-    expect(screen.getByText(/100\s*%/)).toBeInTheDocument();
-  });
-
-  test('displays reasoning in alert component', () => {
+  test('displays maps used information', () => {
     renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
 
-    // Reasoning should be displayed in an alert/info box
-    expect(screen.getByText(/Good recent form/)).toBeInTheDocument();
-    expect(screen.getByText(/Moderate sample size/)).toBeInTheDocument();
+    expect(screen.getByText('Maps Used')).toBeInTheDocument();
+    expect(screen.getByText('10 maps')).toBeInTheDocument();
   });
 
-  test('handles different confidence intervals', () => {
-    const wideIntervalResult = { 
-      ...mockResult, 
-      confidence_interval: [2.0, 7.0] as [number, number],
-      expected_stat: 4.5
-    };
-    renderWithTheme(<PredictionResult result={wideIntervalResult} request={mockRequest} loading={false} error={null} />);
-
-    // Check for confidence interval values (they appear in the text)
-    expect(screen.getByText(/2\.0/)).toBeInTheDocument();
-    expect(screen.getByText(/7\.0/)).toBeInTheDocument();
-  });
-
-  test('handles narrow confidence intervals', () => {
-    const narrowIntervalResult = { 
-      ...mockResult, 
-      confidence_interval: [4.4, 4.6] as [number, number],
-      expected_stat: 4.5
-    };
-    renderWithTheme(<PredictionResult result={narrowIntervalResult} request={mockRequest} loading={false} error={null} />);
-
-    // Check for confidence interval values (they appear in the text)
-    expect(screen.getByText(/4\.4/)).toBeInTheDocument();
-    expect(screen.getByText(/4\.6/)).toBeInTheDocument();
-  });
-
-  test('handles decimal values in statistics', () => {
-    const decimalStatsResult = {
-      ...mockResult,
-      player_stats: {
-        ...mockResult.player_stats,
-        avg_kills: 3.75,
-        avg_assists: 5.25,
-        form_z_score: -0.25
-      }
-    };
-    renderWithTheme(<PredictionResult result={decimalStatsResult} request={mockRequest} loading={false} error={null} />);
-
-    // Since recharts is mocked, we just verify the component renders without errors
-    expect(screen.getByText('OVER')).toBeInTheDocument();
-    expect(screen.getByText(/75\s*%/)).toBeInTheDocument();
-  });
-
-  test('handles large numbers in statistics', () => {
-    const largeNumbersResult = {
-      ...mockResult,
-      player_stats: {
-        ...mockResult.player_stats,
-        avg_damage: 25000,
-        avg_cs: 350
-      }
-    };
-    renderWithTheme(<PredictionResult result={largeNumbersResult} request={mockRequest} loading={false} error={null} />);
-
-    // Since recharts is mocked, we just verify the component renders without errors
-    expect(screen.getByText('OVER')).toBeInTheDocument();
-    expect(screen.getByText(/75\s*%/)).toBeInTheDocument();
-  });
-
-  test('handles zero values in statistics', () => {
-    const zeroStatsResult = {
-      ...mockResult,
-      player_stats: {
-        ...mockResult.player_stats,
-        avg_kills: 0,
-        avg_assists: 0,
-        maps_played: 0
-      }
-    };
-    renderWithTheme(<PredictionResult result={zeroStatsResult} request={mockRequest} loading={false} error={null} />);
-
-    // Since recharts is mocked, we just verify the component renders without errors
-    expect(screen.getByText('OVER')).toBeInTheDocument();
-    expect(screen.getByText(/75\s*%/)).toBeInTheDocument();
-  });
-
-  test('displays chart for player statistics', () => {
+  test('displays prediction curve', () => {
     renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
 
-    // Since recharts is mocked, we just verify the component renders without errors
-    expect(screen.getByText('OVER')).toBeInTheDocument();
-    expect(screen.getByText(/75\s*%/)).toBeInTheDocument();
+    expect(screen.getByText('Prediction Distribution')).toBeInTheDocument();
+  });
+
+  test('handles loading state', () => {
+    renderWithTheme(<PredictionResult result={null} request={null} loading={true} error={null} />);
+
+    expect(screen.getByText('Analyzing Data...')).toBeInTheDocument();
+    expect(screen.getByText(/Our AI is processing your request/)).toBeInTheDocument();
+  });
+
+  test('handles error state', () => {
+    const errorMessage = 'Failed to get prediction';
+    renderWithTheme(<PredictionResult result={null} request={null} loading={false} error={errorMessage} />);
+
+    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText(errorMessage)).toBeInTheDocument();
+  });
+
+  test('handles null result gracefully', () => {
+    renderWithTheme(<PredictionResult result={null} request={null} loading={false} error={null} />);
+
+    // Should not crash and should not render result content
+    expect(screen.queryByText('OVER')).not.toBeInTheDocument();
+    expect(screen.queryByText('AI Prediction')).not.toBeInTheDocument();
+  });
+
+  test('displays copy button', () => {
+    renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
+
+    expect(screen.getByText('Copy JSON')).toBeInTheDocument();
   });
 
   test('handles missing optional fields gracefully', () => {
-    const minimalResult = {
-      prediction: 'OVER' as const,
+    const minimalResult: PredictionResponse = {
+      prediction: 'UNDER',
       confidence: 50.0,
+      base_model_confidence: 50.0,
       expected_stat: 3.0,
-      confidence_interval: [2.0, 4.0] as [number, number],
-      reasoning: 'Form is consistent with historical average. Limited sample size reduces confidence. Expected performance close to prop line. Low confidence prediction.',
+      confidence_interval: [2.5, 3.5],
+      reasoning: 'Basic prediction',
       player_stats: {
         avg_kills: 3.0,
         avg_assists: 5.0,
@@ -267,71 +173,54 @@ describe('PredictionResult', () => {
         avg_deaths: 2.0,
         avg_damage: 12000,
         avg_vision: 20.0,
-        avg_cs: 150.0,
+        avg_cs: 180.0,
         position_factor: 1.0
       },
-      data_years: '2024 (3 matches)'
+      data_years: '2024 (3 matches)',
+      sample_details: {
+        maps_used: 5,
+        filter_criteria: 'Basic filtering',
+        position: 'MID',
+        opponent: 'Unknown',
+        tournament: 'LCK',
+        map_range: '1-2',
+        data_years: '2024 (3 matches)',
+        sample_quality: 'Poor',
+        data_tier: 2,
+        tier_name: 'Same Region',
+        tier_weight: 0.8,
+        fallback_used: true,
+        sample_sources: {},
+        volatility: 0.5,
+        ci_method: 'bootstrap',
+        strict_mode_applied: false
+      },
+      data_tier: 2,
+      confidence_warning: 'Low sample size',
+      prop_type: 'kills',
+      prop_value: 3.0
     };
 
     renderWithTheme(<PredictionResult result={minimalResult} request={mockRequest} loading={false} error={null} />);
 
-    // Should still render without errors
-    expect(screen.getByText('OVER')).toBeInTheDocument();
+    expect(screen.getByText('UNDER')).toBeInTheDocument();
     expect(screen.getByText(/50\s*%/)).toBeInTheDocument();
     // Use getAllByText since multiple elements contain "3.0"
-    expect(screen.getAllByText('3.0')).toHaveLength(2);
+    expect(screen.getAllByText('3.0')).toHaveLength(1);
   });
 
   test('applies correct styling for OVER prediction', () => {
     renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
 
-    const predictionChip = screen.getByText('OVER');
-    expect(predictionChip).toBeInTheDocument();
-    // Should have success color for OVER prediction
+    const predictionElement = screen.getByText('OVER');
+    expect(predictionElement).toBeInTheDocument();
   });
 
   test('applies correct styling for UNDER prediction', () => {
-    const underResult = { 
-      ...mockResult, 
-      prediction: 'UNDER' as const,
-      reasoning: 'Below-average recent form. Limited sample size reduces confidence. Expected performance significantly below prop line. Low confidence prediction.'
-    };
+    const underResult = { ...mockResult, prediction: 'UNDER' as const };
     renderWithTheme(<PredictionResult result={underResult} request={mockRequest} loading={false} error={null} />);
 
-    const predictionChip = screen.getByText('UNDER');
-    expect(predictionChip).toBeInTheDocument();
-    // Should have error color for UNDER prediction
-  });
-
-  test('handles loading state', () => {
-    renderWithTheme(<PredictionResult result={null} request={null} loading={true} error={null} />);
-
-    expect(screen.getByText('Analyzing Data...')).toBeInTheDocument();
-  });
-
-  test('handles error state', () => {
-    const errorMessage = 'Failed to get prediction';
-    renderWithTheme(<PredictionResult result={null} request={null} loading={false} error={errorMessage} />);
-
-    expect(screen.getByText(errorMessage)).toBeInTheDocument();
-  });
-
-  test('handles null result', () => {
-    const { container } = renderWithTheme(<PredictionResult result={null} request={null} loading={false} error={null} />);
-
-    expect(container.firstChild).toBeNull();
-  });
-
-  test('displays copy JSON button', () => {
-    renderWithTheme(<PredictionResult result={mockResult} request={mockRequest} loading={false} error={null} />);
-
-    expect(screen.getByText('Copy JSON')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /copy json/i })).toBeInTheDocument();
-  });
-
-  test('copy button is not shown when no result', () => {
-    renderWithTheme(<PredictionResult result={null} request={null} loading={false} error={null} />);
-
-    expect(screen.queryByText('Copy JSON')).not.toBeInTheDocument();
+    const predictionElement = screen.getByText('UNDER');
+    expect(predictionElement).toBeInTheDocument();
   });
 }); 

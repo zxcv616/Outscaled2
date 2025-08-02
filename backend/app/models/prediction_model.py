@@ -412,7 +412,7 @@ class PredictionModel:
         
         # Generate reasoning with volatility warnings
         reasoning = self._generate_reasoning_with_tiers(
-            features, prediction, final_confidence, prop_value, 
+            features, prediction, final_confidence * 100, prop_value, 
             expected_stat, tier_info, sample_details.get('fallback_used', False)
         )
         

@@ -95,9 +95,10 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
       newErrors.opponent = 'Opponent is required';
     }
 
-    if (!formData.team) {
-      newErrors.team = 'Team is required';
-    }
+    // Team is now optional - backend will auto-infer if not provided
+    // if (!formData.team) {
+    //   newErrors.team = 'Team is required';
+    // }
 
     if (!formData.position_roles?.length) {
       newErrors.position_roles = 'At least one position is required';
@@ -117,7 +118,7 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
         map_range: formData.map_range as [number, number],
         opponent: formData.opponent!,
         tournament: formData.tournament!,
-        team: formData.team!,
+        team: formData.team && formData.team.trim() ? formData.team : undefined, // Convert empty string to undefined
         match_date: formData.match_date!,
         position_roles: formData.position_roles,
       });
@@ -311,7 +312,7 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <Group sx={{ mr: 1, color: 'primary.main' }} />
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Team
+                Team (Optional)
               </Typography>
             </Box>
             <Autocomplete
@@ -324,10 +325,10 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Team"
+                  label="Team (Optional - will be auto-inferred if left blank)"
                   error={!!errors.team}
-                  helperText={errors.team}
-                  placeholder="Type to search teams..."
+                  helperText={errors.team || "Leave blank to auto-infer from player's recent matches"}
+                  placeholder="Type to search teams or leave blank..."
                   fullWidth
                   InputProps={{
                     ...params.InputProps,

@@ -1,19 +1,28 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field
+from typing import List, Optional, Union
 import uvicorn
 
 from .models.prediction_model import PredictionModel
 from .utils.data_processor import DataProcessor
 
+# Initialize global instances
+data_processor = DataProcessor()
+prediction_model = PredictionModel()
+
 app = FastAPI(
     title="Outscaled.GG Backend API",
     description="Machine learning engine for League of Legends prop bet predictions",
-    version="1.0.0"
+    version="1.0.0",
+    openapi_url="/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    # Force schema regeneration
+    openapi_tags=[{"name": "predictions", "description": "Prediction endpoints"}]
 )
 
-# Add CORS middleware
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,21 +31,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize global components
-data_processor = DataProcessor()
-prediction_model = PredictionModel()
-
+# Pydantic models
 class PredictionRequest(BaseModel):
-    player_names: List[str]
-    prop_type: str  # "kills" or "assists"
-    prop_value: float
-    map_range: List[int]  # [1, 2] for Maps 1-2
-    opponent: str
-    tournament: str
-    team: str
-    match_date: str
-    position_roles: List[str]
-    strict_mode: bool = False  # Optional: use only exact tournament data
+    player_names: List[str] = Field(..., description="List of player names")
+    prop_type: str = Field(..., description="Type of prop (kills or assists)")
+    prop_value: float = Field(..., description="Prop line value")
+    map_range: List[int] = Field(..., description="Map range [start, end]")
+    opponent: str = Field(..., description="Opponent team name")
+    tournament: str = Field(..., description="Tournament name")
+    team: Optional[str] = Field(default=None, description="Player's team name (optional - will be auto-inferred if not provided)")
+    match_date: str = Field(..., description="Match date in YYYY-MM-DD format")
+    position_roles: List[str] = Field(..., description="List of position roles")
+    strict_mode: bool = Field(default=False, description="Use only exact tournament data")
+    
+    model_config = {
+        "json_schema_extra": {"version": "2.5", "team_optional": True}
+    }
 
 class PredictionResponse(BaseModel):
     prediction: str  # "OVER" or "UNDER"

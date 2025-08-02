@@ -21,9 +21,24 @@ export const predictionApi = {
         if (error.response) {
           // Server responded with error status
           const apiError = error.response.data as ApiError;
-          const errorMessage = apiError?.detail || 
-                             apiError?.message || 
-                             `Server error: ${error.response.status}`;
+          
+          // Handle different error formats
+          let errorMessage = '';
+          if (apiError?.detail) {
+            if (Array.isArray(apiError.detail)) {
+              // Handle validation errors with multiple details
+              errorMessage = apiError.detail.map((detail: any) => 
+                `${detail.loc?.join('.')}: ${detail.msg}`
+              ).join(', ');
+            } else {
+              errorMessage = apiError.detail;
+            }
+          } else if (apiError?.message) {
+            errorMessage = apiError.message;
+          } else {
+            errorMessage = `Server error: ${error.response.status}`;
+          }
+          
           throw new Error(errorMessage);
         } else if (error.request) {
           // Request was made but no response received

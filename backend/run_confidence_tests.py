@@ -11,7 +11,7 @@ import time
 def test_confidence_fix():
     """Test the confidence calculation fix"""
     
-    print("🧪 CONFIDENCE CALCULATION TEST")
+    print("CONFIDENCE CALCULATION TEST")
     print("=" * 50)
     
     # Test cases
@@ -66,7 +66,7 @@ def test_confidence_fix():
     results = []
     
     for i, test_case in enumerate(test_cases, 1):
-        print(f"\n📊 Test {i}: {test_case['name']}")
+        print(f"\nTest {i}: {test_case['name']}")
         print("-" * 40)
         
         try:
@@ -108,12 +108,12 @@ def test_confidence_fix():
                 # Check consistency
                 if curve_confidence is not None:
                     match = abs(top_confidence - curve_confidence) < 0.1
-                    print(f"  Consistency: {'✅ PASS' if match else '❌ FAIL'}")
+                    print(f"  Consistency: {'PASS' if match else 'FAIL'}")
                     
                     if not match:
                         print(f"    ⚠️  Mismatch: {abs(top_confidence - curve_confidence):.1f}% difference")
                 else:
-                    print(f"  Consistency: ❌ FAIL (No curve data)")
+                    print(f"  Consistency: FAIL (No curve data)")
                     match = False
                 
                 results.append({
@@ -126,7 +126,7 @@ def test_confidence_fix():
                 })
                 
             else:
-                print(f"  ❌ API Error: {response.status_code}")
+                print(f"  API Error: {response.status_code}")
                 results.append({
                     'test': test_case['name'],
                     'success': False,
@@ -134,7 +134,7 @@ def test_confidence_fix():
                 })
                 
         except Exception as e:
-            print(f"  ❌ Request Error: {str(e)}")
+            print(f"  Request Error: {str(e)}")
             results.append({
                 'test': test_case['name'],
                 'success': False,
@@ -157,26 +157,26 @@ def test_confidence_fix():
     print(f"Success Rate: {len(successful_tests)/len(results)*100:.1f}%")
     print(f"Consistency Rate: {len(matching_tests)/len(successful_tests)*100:.1f}%" if successful_tests else "N/A")
     
-    print("\n📊 Results:")
+    print("\nResults:")
     for result in results:
         if result.get('success', False):
             status = "✅ PASS" if result.get('match', False) else "❌ FAIL"
             print(f"  {result['test']}: {status}")
         else:
-            print(f"  {result['test']}: ❌ ERROR")
+            print(f"  {result['test']}: ERROR")
     
     # Final verdict
     if len(successful_tests) == len(results) and len(matching_tests) == len(successful_tests):
-        print("\n🎉 ALL TESTS PASSED! ✅")
+        print("\nALL TESTS PASSED!")
         print("Confidence calculation fix is working correctly.")
     else:
-        print("\n⚠️  SOME TESTS FAILED! ❌")
+        print("\nSOME TESTS FAILED!")
         print("Issues detected in confidence calculation.")
 
 def quick_test():
     """Quick single test for immediate verification"""
     
-    print("⚡ QUICK CONFIDENCE TEST")
+    print("QUICK CONFIDENCE TEST")
     print("=" * 40)
     
     request_data = {
@@ -225,19 +225,19 @@ def quick_test():
             
             if curve_confidence is not None:
                 match = abs(top_confidence - curve_confidence) < 0.1
-                print(f"Consistency: {'✅ PASS' if match else '❌ FAIL'}")
+                print(f"Consistency: {'PASS' if match else 'FAIL'}")
                 
                 if match:
-                    print("\n🎉 CONFIDENCE FIX WORKING! ✅")
+                    print("\nCONFIDENCE FIX WORKING!")
                 else:
-                    print("\n⚠️  CONFIDENCE MISMATCH DETECTED! ❌")
+                    print("\nCONFIDENCE MISMATCH DETECTED!")
             else:
-                print("❌ No curve data found")
+                print("No curve data found")
         else:
-            print(f"❌ API Error: {response.status_code}")
+            print(f"API Error: {response.status_code}")
             
     except Exception as e:
-        print(f"❌ Request Error: {str(e)}")
+        print(f"Request Error: {str(e)}")
 
 if __name__ == "__main__":
     import sys
@@ -247,6 +247,6 @@ if __name__ == "__main__":
     else:
         test_confidence_fix()
         
-    print("\n💡 Usage:")
+    print("\nUsage:")
     print("  python run_confidence_tests.py          # Run full test suite")
     print("  python run_confidence_tests.py quick    # Run quick single test") 

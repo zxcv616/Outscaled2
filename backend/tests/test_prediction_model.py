@@ -95,7 +95,8 @@ class TestPredictionModel(unittest.TestCase):
         prediction = 'OVER'
         confidence = 70.0  # Percentage value
         
-        reasoning = self.model._generate_reasoning(features, prediction, confidence, prop_value)
+        expected_stat = 5.5
+        reasoning = self.model._generate_reasoning(features, prediction, confidence, prop_value, expected_stat)
         
         # Should return a string with reasoning
         self.assertIsInstance(reasoning, str)

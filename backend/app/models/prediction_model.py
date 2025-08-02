@@ -11,11 +11,26 @@ from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 
+# XGBoost integration
+try:
+    from .xgboost_model import XGBoostPredictionModel
+    XGBOOST_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"XGBoost model not available: {e}")
+    XGBOOST_AVAILABLE = False
+
 class PredictionModel:
-    def __init__(self):
+    def __init__(self, use_xgboost=False):
+        self.use_xgboost = use_xgboost and XGBOOST_AVAILABLE
         self.model = None
         self.scaler = StandardScaler()
         self.is_trained = False
+        self.xgboost_model = None
+        
+        if self.use_xgboost:
+            logger.info("Initializing XGBoost-enhanced prediction model")
+            self.xgboost_model = XGBoostPredictionModel()
+        
         self._train_model()
     
     def _train_model(self):
@@ -345,6 +360,58 @@ class PredictionModel:
         
         return RuleBasedModel()
     
+    def _calculate_confidence(self, features: Dict[str, float], prop_value: float, 
+                             expected_stat: float, sample_details: Dict = None) -> Dict[str, float]:
+        """Centralized confidence calculation to ensure consistency across all methods"""
+        # Prepare feature vector
+        feature_vector = self._prepare_features(features)
+        
+        # Get calibrated probabilities
+        prediction_proba = self.model.predict_proba(feature_vector)[0]
+        base_confidence = prediction_proba[1]  # Probability of OVER
+        
+        # Determine prediction
+        prediction = "OVER" if expected_stat > prop_value else "UNDER"
+        
+        # Calculate dynamic confidence based on gap
+        gap = abs(expected_stat - prop_value)
+        gap_ratio = gap / max(prop_value, 1)  # Normalize gap by prop value
+        
+        # Adjust confidence based on gap
+        # Larger gap = higher confidence (more certain prediction)
+        # Smaller gap = lower confidence (closer to the line)
+        gap_adjustment = min(gap_ratio * 2.0, 0.5)  # Cap adjustment at 50%
+        
+        if prediction == "OVER":
+            # For OVER predictions, higher confidence when expected_stat >> prop_value
+            adjusted_confidence = base_confidence + gap_adjustment
+        else:
+            # For UNDER predictions, higher confidence when expected_stat << prop_value
+            adjusted_confidence = (1 - base_confidence) + gap_adjustment
+        
+        # Get tier info consistently from both sources
+        tier_info = {'weight': 1.0, 'tier': 1, 'name': 'Default Tier'}
+        if sample_details and 'tier_info' in sample_details:
+            tier_info = sample_details['tier_info']
+        elif 'tier_info' in features:
+            tier_info = features['tier_info']
+        
+        # Apply tier-based scaling
+        final_confidence = adjusted_confidence * tier_info.get('weight', 1.0)
+        
+        # Ensure confidence is within bounds
+        final_confidence = max(0.1, min(0.95, final_confidence))
+        
+        return {
+            'base_confidence': base_confidence,
+            'adjusted_confidence': adjusted_confidence,
+            'final_confidence': final_confidence,
+            'prediction': prediction,
+            'tier_info': tier_info,
+            'gap': gap,
+            'gap_ratio': gap_ratio
+        }
+    
     def _prepare_features(self, features: Dict[str, float]) -> np.ndarray:
         """Prepare features for model input"""
         # Define feature order for consistency
@@ -368,52 +435,35 @@ class PredictionModel:
         """
         Generate prediction with calibrated probabilities and confidence scaling
         """
-        # Prepare feature vector
-        feature_vector = self._prepare_features(features)
+        # Use XGBoost model if available and enabled
+        if self.use_xgboost and self.xgboost_model:
+            logger.info("Using XGBoost enhanced prediction")
+            try:
+                # XGBoostPredictionModel should have the same interface
+                return self.xgboost_model.predict(features, prop_value, sample_details)
+            except Exception as e:
+                logger.warning(f"XGBoost prediction failed, falling back to RandomForest: {e}")
+                # Fall through to RandomForest prediction
         
-        # Get calibrated probabilities
-        prediction_proba = self.model.predict_proba(feature_vector)[0]
-        base_confidence = prediction_proba[1]  # Probability of OVER
-        
-        # Calculate expected stat using model confidence
+        # Calculate expected stat
         expected_stat = self._calculate_expected_stat(features)
         
-        # Determine prediction
-        prediction = "OVER" if expected_stat > prop_value else "UNDER"
+        # Use centralized confidence calculation
+        confidence_result = self._calculate_confidence(features, prop_value, expected_stat, sample_details)
         
-        # Calculate dynamic confidence based on gap (same logic as prediction curve)
-        gap = abs(expected_stat - prop_value)
-        gap_ratio = gap / max(prop_value, 1)  # Normalize gap by prop value
-        
-        # Base confidence from model
-        base_model_confidence = base_confidence
-        
-        # Adjust confidence based on gap
-        # Larger gap = higher confidence (more certain prediction)
-        # Smaller gap = lower confidence (closer to the line)
-        gap_adjustment = min(gap_ratio * 2.0, 0.5)  # Cap adjustment at 50%
-        
-        if prediction == "OVER":
-            # For OVER predictions, higher confidence when expected_stat >> prop_value
-            adjusted_confidence = base_model_confidence + gap_adjustment
-        else:
-            # For UNDER predictions, higher confidence when expected_stat << prop_value
-            adjusted_confidence = (1 - base_model_confidence) + gap_adjustment
-        
-        # Apply tier-based scaling
-        tier_info = sample_details.get('tier_info', {'weight': 1.0, 'tier': 1, 'name': 'Default Tier'})
-        final_confidence = adjusted_confidence * tier_info.get('weight', 1.0)
-        
-        # Ensure confidence is within bounds
-        final_confidence = max(0.1, min(0.95, final_confidence))
+        prediction = confidence_result['prediction']
+        final_confidence = confidence_result['final_confidence']
+        base_confidence = confidence_result['base_confidence']
+        tier_info = confidence_result['tier_info']
         
         # Calculate confidence interval
         confidence_interval = self._calculate_bootstrap_confidence_interval(features, expected_stat)
         
         # Generate reasoning with volatility warnings
+        fallback_used = sample_details.get('fallback_used', False) if sample_details else False
         reasoning = self._generate_reasoning_with_tiers(
             features, prediction, final_confidence * 100, prop_value, 
-            expected_stat, tier_info, sample_details.get('fallback_used', False)
+            expected_stat, tier_info, fallback_used
         )
         
         # Prepare player stats
@@ -476,43 +526,20 @@ class PredictionModel:
         props = [input_prop + step * i for i in range(-range_size, range_size + 1)]
         results = []
         
-        # Get base model confidence and expected stat once
-        feature_vector = self._prepare_features(features)
-        prediction_proba = self.model.predict_proba(feature_vector)[0]
-        base_confidence = prediction_proba[1]  # Probability of OVER
+        # Calculate expected stat once
         expected_stat = self._calculate_expected_stat(features)
         
-        # Get tier info for confidence scaling
-        tier_info = features.get('tier_info', {'weight': 1.0, 'tier': 1, 'name': 'Default Tier'})
+        # Create sample_details that includes tier_info from features if available
+        sample_details = None
+        if 'tier_info' in features:
+            sample_details = {'tier_info': features['tier_info']}
         
         for prop in props:
-            # Determine prediction based on expected_stat vs prop_value
-            prediction = "OVER" if expected_stat > prop else "UNDER"
+            # Use centralized confidence calculation
+            confidence_result = self._calculate_confidence(features, prop, expected_stat, sample_details)
             
-            # Calculate dynamic confidence based on gap
-            gap = abs(expected_stat - prop)
-            gap_ratio = gap / max(prop, 1)  # Normalize gap by prop value
-            
-            # Base confidence from model
-            base_model_confidence = base_confidence
-            
-            # Adjust confidence based on gap
-            # Larger gap = higher confidence (more certain prediction)
-            # Smaller gap = lower confidence (closer to the line)
-            gap_adjustment = min(gap_ratio * 2.0, 0.5)  # Cap adjustment at 50%
-            
-            if prediction == "OVER":
-                # For OVER predictions, higher confidence when expected_stat >> prop_value
-                adjusted_confidence = base_model_confidence + gap_adjustment
-            else:
-                # For UNDER predictions, higher confidence when expected_stat << prop_value
-                adjusted_confidence = (1 - base_model_confidence) + gap_adjustment
-            
-            # Apply tier-based scaling
-            final_confidence = adjusted_confidence * tier_info.get('weight', 1.0)
-            
-            # Ensure confidence is within bounds
-            final_confidence = max(0.1, min(0.95, final_confidence))
+            prediction = confidence_result['prediction']
+            final_confidence = confidence_result['final_confidence']
             
             # Extract key information
             curve_point = {
@@ -529,23 +556,11 @@ class PredictionModel:
     
     def _calculate_expected_stat(self, features: Dict[str, float]) -> float:
         """
-        Calculate expected statistic using empirical regression-based approach.
-        Uses model-inferred estimates based on calibrated probabilities.
+        Calculate expected statistic using empirical approach without circular dependency.
+        Based purely on historical data and form, not model confidence.
         """
-        # Get base model confidence for empirical estimation
-        feature_vector = self._prepare_features(features)
-        prediction_proba = self.model.predict_proba(feature_vector)[0]
-        
         # Base expected value from historical average
         base_expected = features.get('avg_kills', 0)
-        
-        # Use model confidence to adjust expected stat
-        # Higher confidence in OVER prediction suggests higher expected performance
-        model_confidence = prediction_proba[1]  # Probability of OVER
-        
-        # Empirical adjustment based on model confidence
-        # If model is confident in OVER, expect higher performance
-        confidence_adjustment = (model_confidence - 0.5) * 2.0  # Scale to [-1, 1]
         
         # Enhanced form adjustment with diminishing returns
         form_z_score = features.get('form_z_score', 0)
@@ -562,8 +577,8 @@ class PredictionModel:
         sample_size = features.get('maps_played', 10)
         sample_confidence = min(sample_size / 20.0, 1.0)
         
-        # Calculate final expected stat with empirical model adjustment
-        expected_stat = (base_expected + form_adjustment - volatility_penalty + confidence_adjustment) * position_factor
+        # Calculate final expected stat based on empirical data
+        expected_stat = (base_expected + form_adjustment - volatility_penalty) * position_factor
         
         # Apply sample size confidence adjustment
         expected_stat = expected_stat * sample_confidence + (base_expected * (1 - sample_confidence))

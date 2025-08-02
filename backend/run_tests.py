@@ -11,7 +11,7 @@ import subprocess
 
 def run_tests():
     """Run all backend tests"""
-    print("🧪 Running Outscaled.GG Backend Tests")
+    print("Running Outscaled.GG Backend Tests")
     print("=" * 50)
     
     # Add the app directory to the path
@@ -28,32 +28,32 @@ def run_tests():
     
     # Print summary
     print("\n" + "=" * 50)
-    print("📊 Test Summary")
+    print("Test Summary")
     print(f"Tests run: {result.testsRun}")
     print(f"Failures: {len(result.failures)}")
     print(f"Errors: {len(result.errors)}")
     
     if result.failures:
-        print("\n❌ Failures:")
+        print("\nFailures:")
         for test, traceback in result.failures:
             print(f"  - {test}: {traceback}")
     
     if result.errors:
-        print("\n❌ Errors:")
+        print("\nErrors:")
         for test, traceback in result.errors:
             print(f"  - {test}: {traceback}")
     
     if result.wasSuccessful():
-        print("\n✅ All tests passed!")
+        print("\nAll tests passed!")
         return 0
     else:
-        print("\n❌ Some tests failed!")
+        print("\nSome tests failed!")
         return 1
 
 def run_pytest():
     """Run tests using pytest for better output"""
     try:
-        print("🧪 Running tests with pytest...")
+        print("Running tests with pytest...")
         result = subprocess.run([
             sys.executable, '-m', 'pytest', 
             'tests/', 
@@ -62,7 +62,7 @@ def run_pytest():
         ], cwd=os.path.dirname(__file__))
         return result.returncode
     except FileNotFoundError:
-        print("⚠️  pytest not found, falling back to unittest")
+        print("WARNING: pytest not found, falling back to unittest")
         return run_tests()
 
 if __name__ == '__main__':

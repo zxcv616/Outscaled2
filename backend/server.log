@@ -1,54 +1,578 @@
-INFO:app.utils.data_processor:Loading 2024 data...
-/Users/matthewwiecking/Desktop/Outscaled2/backend/app/utils/data_processor.py:23: DtypeWarning: Columns (2) have mixed types. Specify dtype option on import or set low_memory=False.
-  self.data_2024 = pd.read_csv('../data/2024_LoL_esports_match_data_from_OraclesElixir.csv')
-INFO:app.utils.data_processor:Loading 2025 data...
-/Users/matthewwiecking/Desktop/Outscaled2/backend/app/utils/data_processor.py:27: DtypeWarning: Columns (2) have mixed types. Specify dtype option on import or set low_memory=False.
-  self.data_2025 = pd.read_csv('../data/2025_LoL_esports_match_data_from_OraclesElixir.csv')
-INFO:app.utils.data_processor:Map index generated successfully
-INFO:app.utils.data_processor:Data preprocessing completed
-INFO:app.utils.data_processor:Data loaded successfully. Total records: 201204
-INFO:app.models.prediction_model:Training prediction model...
-INFO:app.models.prediction_model:Model training completed
-INFO:     Started server process [12580]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
+INFO:     Will watch for changes in these directories: ['C:\\Users\\sandv\\Desktop\\Outscaled2\\backend']
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-WARNING:app.utils.data_processor:No data found for players: ['Wink']
-INFO:     127.0.0.1:59101 - "POST /predict HTTP/1.1" 200 OK
-WARNING:app.utils.data_processor:No data found for players: ['Zika']
-INFO:     127.0.0.1:59103 - "POST /predict HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59106 - "POST /predict HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59108 - "POST /predict HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59110 - "POST /predict HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59120 - "GET /health HTTP/1.1" 200 OK
-WARNING:app.utils.data_processor:No data found for players: ['Wink']
-INFO:     127.0.0.1:59122 - "POST /predict HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59130 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59132 - "POST /predict HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59151 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59162 - "POST /predict HTTP/1.1" 200 OK
-INFO:     None:0 - "GET /main.b5dd13d8425f3005b7e3.hot-update.json HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:59706 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59785 - "OPTIONS /predict HTTP/1.1" 200 OK
-WARNING:app.utils.data_processor:No data found for players: ['Faker']
-INFO:     127.0.0.1:59785 - "POST /predict HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59863 - "GET /players HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:59864 - "GET /teams HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:59879 - "GET /players HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:59882 - "GET /players HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:59884 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59886 - "GET /docs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59896 - "GET /players HTTP/1.1" 404 Not Found
-INFO:     None:0 - "GET /main.26ea0274d53fcc1ae85e.hot-update.json HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:61675 - "GET /players HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:61676 - "GET /teams HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:61675 - "GET /players HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:61676 - "GET /teams HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:62079 - "GET /players HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:62080 - "GET /teams HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:62079 - "GET /players HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:62082 - "GET /teams HTTP/1.1" 404 Not Found
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [12580]
+INFO:     Started reloader process [28620] using StatReload
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+Process SpawnProcess-1:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 70, in serve
+    await self._serve(sockets)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 77, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\main.py", line 12, in <module>
+    prediction_model = PredictionModel()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 19, in __init__
+    self._train_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 26, in _train_model
+    X, y, sample_weights = self._generate_real_training_data()
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 88, in _generate_real_training_data
+    all_players = data_processor.get_all_players()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\utils\data_processor.py", line 811, in get_all_players
+    all_players = combined_data['playername'].dropna().unique().tolist()
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'playername'
+WARNING:  StatReload detected changes in 'app\models\prediction_model.py'. Reloading...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+Process SpawnProcess-2:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 70, in serve
+    await self._serve(sockets)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 77, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\main.py", line 12, in <module>
+    prediction_model = PredictionModel()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 19, in __init__
+    self._train_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 26, in _train_model
+    X, y, sample_weights = self._generate_real_training_data()
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 88, in _generate_real_training_data
+    all_players = data_processor.get_all_players()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\utils\data_processor.py", line 811, in get_all_players
+    all_players = combined_data['playername'].dropna().unique().tolist()
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'playername'
+WARNING:  StatReload detected changes in 'app\models\prediction_model.py'. Reloading...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+Process SpawnProcess-3:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 70, in serve
+    await self._serve(sockets)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 77, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\main.py", line 12, in <module>
+    prediction_model = PredictionModel()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 19, in __init__
+    self._train_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 26, in _train_model
+    X, y, sample_weights = self._generate_real_training_data()
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 88, in _generate_real_training_data
+    all_players = data_processor.get_all_players()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\utils\data_processor.py", line 811, in get_all_players
+    all_players = combined_data['playername'].dropna().unique().tolist()
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'playername'
+WARNING:  StatReload detected changes in 'app\models\prediction_model.py'. Reloading...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+Process SpawnProcess-4:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 70, in serve
+    await self._serve(sockets)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 77, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\main.py", line 12, in <module>
+    prediction_model = PredictionModel()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 19, in __init__
+    self._train_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 26, in _train_model
+    X, y, sample_weights = self._generate_real_training_data()
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 88, in _generate_real_training_data
+    all_players = data_processor.get_all_players()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\utils\data_processor.py", line 811, in get_all_players
+    all_players = combined_data['playername'].dropna().unique().tolist()
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'playername'
+WARNING:  StatReload detected changes in 'app\models\prediction_model.py'. Reloading...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+Process SpawnProcess-5:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 70, in serve
+    await self._serve(sockets)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 77, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\main.py", line 12, in <module>
+    prediction_model = PredictionModel()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 19, in __init__
+    self._train_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 26, in _train_model
+    X, y, sample_weights = self._generate_real_training_data()
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 88, in _generate_real_training_data
+    all_players = data_processor.get_all_players()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\utils\data_processor.py", line 811, in get_all_players
+    all_players = combined_data['playername'].dropna().unique().tolist()
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'playername'
+WARNING:  StatReload detected changes in 'app\models\prediction_model.py'. Reloading...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+Process SpawnProcess-6:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 70, in serve
+    await self._serve(sockets)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 77, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\main.py", line 12, in <module>
+    prediction_model = PredictionModel()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 19, in __init__
+    self._train_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 26, in _train_model
+    X, y, sample_weights = self._generate_real_training_data()
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 88, in _generate_real_training_data
+    all_players = data_processor.get_all_players()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\utils\data_processor.py", line 811, in get_all_players
+    all_players = combined_data['playername'].dropna().unique().tolist()
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'playername'
+WARNING:  StatReload detected changes in 'app\models\prediction_model.py'. Reloading...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+Process SpawnProcess-7:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 70, in serve
+    await self._serve(sockets)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 77, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\main.py", line 12, in <module>
+    prediction_model = PredictionModel()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 19, in __init__
+    self._train_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 26, in _train_model
+    X, y, sample_weights = self._generate_real_training_data()
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 88, in _generate_real_training_data
+    all_players = data_processor.get_all_players()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\utils\data_processor.py", line 811, in get_all_players
+    all_players = combined_data['playername'].dropna().unique().tolist()
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'playername'
+WARNING:  StatReload detected changes in 'app\models\prediction_model.py'. Reloading...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+Process SpawnProcess-8:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 70, in serve
+    await self._serve(sockets)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 77, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\main.py", line 12, in <module>
+    prediction_model = PredictionModel()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 19, in __init__
+    self._train_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 26, in _train_model
+    X, y, sample_weights = self._generate_real_training_data()
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 88, in _generate_real_training_data
+    all_players = data_processor.get_all_players()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\utils\data_processor.py", line 811, in get_all_players
+    all_players = combined_data['playername'].dropna().unique().tolist()
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'playername'
+WARNING:  StatReload detected changes in 'test_confidence_consistency.py'. Reloading...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+Process SpawnProcess-9:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 70, in serve
+    await self._serve(sockets)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\server.py", line 77, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\main.py", line 12, in <module>
+    prediction_model = PredictionModel()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 19, in __init__
+    self._train_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 26, in _train_model
+    X, y, sample_weights = self._generate_real_training_data()
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\models\prediction_model.py", line 88, in _generate_real_training_data
+    all_players = data_processor.get_all_players()
+  File "C:\Users\sandv\Desktop\Outscaled2\backend\app\utils\data_processor.py", line 811, in get_all_players
+    all_players = combined_data['playername'].dropna().unique().tolist()
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'playername'

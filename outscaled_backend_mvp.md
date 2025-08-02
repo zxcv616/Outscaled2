@@ -27,7 +27,7 @@ The model is trained on professional match data from Oracle’s Elixir. Each row
 
 ### Map Index Generation
 
-- `map_index_within_series` is inferred by grouping `gameid` prefix and ranking maps:
+* `map_index_within_series` is inferred by grouping `gameid` prefix and ranking maps:
 
 ```python
 df["match_series"] = df["gameid"].str.split("_").str[0]
@@ -58,15 +58,15 @@ df["map_index_within_series"] = df.groupby("match_series")["gameid"].rank("dense
 
 ### a. Data Filtering
 
-- Match players by `player_names`
-- Select rows within `map_range`
-- Filter by team/opponent/tournament
+* Match players by `player_names`
+* Select rows within `map_range`
+* Filter by team/opponent/tournament
 
 ### b. Aggregation & Normalization
 
-- Aggregate stats (e.g., kills, assists) across `map_range`
-- Normalize per map played
-- Handle NaNs, low sample size, patch drift
+* Aggregate stats (e.g., kills, assists) across `map_range`
+* Normalize per map played
+* Handle NaNs, low sample size, patch drift
 
 ---
 
@@ -84,9 +84,9 @@ df["map_index_within_series"] = df.groupby("match_series")["gameid"].rank("dense
 
 For combos:
 
-- Aggregate key stats
-- Optionally average or concatenate features
-- Apply confidence penalty
+* Aggregate key stats
+* Optionally average or concatenate features
+* Apply confidence penalty
 
 ---
 
@@ -104,13 +104,13 @@ For combos:
 
 ## 🔢 6. Labeling Strategy
 
-- Each training point is labeled:
+* Each training point is labeled:
 
 ```python
 label = 1 if actual > prop_value else 0
 ```
 
-- Simulate multiple `prop_value`s per player-match (e.g., actual±2) to expand training size
+* Simulate multiple `prop_value`s per player-match (e.g., actual±2) to expand training size
 
 ---
 
@@ -136,11 +136,12 @@ label = 1 if actual > prop_value else 0
 
 ## 🔬 8. Reasoning Engine
 
-- Rule-based generator interprets:
-  - Stat deltas vs prop
-  - `form_z_score` magnitude
-  - Volatility
-  - Opponent/tournament pressure
+* Rule-based generator interprets:
+
+  * Stat deltas vs prop
+  * `form_z_score` magnitude
+  * Volatility
+  * Opponent/tournament pressure
 
 ---
 
@@ -161,10 +162,62 @@ label = 1 if actual > prop_value else 0
 
 ## 🔁 Stretch Goals (Post-MVP)
 
-- Quantile regression for predicted confidence intervals
-- SHAP feature explanation
-- EV calculator vs prop lines
-- Patch-based meta drift detection
-- Role-specific sub-models
-- Time-decay weighting for recent matches
+* Quantile regression for predicted confidence intervals
+* SHAP feature explanation
+* EV calculator vs prop lines
+* Patch-based meta drift detection
+* Role-specific sub-models
+* Time-decay weighting for recent matches
 
+---
+
+## 🐳 Docker + docker-compose Setup
+
+To ensure portable development and deployment:
+
+### Dockerfile (backend/)
+
+```Dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY ./backend /app
+RUN pip install --upgrade pip && pip install -r requirements.txt
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### docker-compose.yml
+
+```yaml
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - ENV=production
+```
+
+### .dockerignore
+
+```
+__pycache__/
+*.pyc
+*.csv
+*.log
+.env
+```
+
+---
+
+To start:
+
+```bash
+docker-compose up --build
+```
+
+The API will be available at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+Use this setup for local dev, staging, or deploy to cloud with tools like Fly.io, Render, or EC2.

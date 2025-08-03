@@ -28,7 +28,6 @@ interface PlayerSelectionStepProps {
   formData: any;
   errors: Record<string, string>;
   onChange: (updates: any) => void;
-  onPositionInteractionStart?: () => void;
 }
 
 const POSITIONS = [
@@ -43,8 +42,8 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
   formData,
   errors,
   onChange,
-  onPositionInteractionStart,
 }) => {
+  
   const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [playerSuggestions, setPlayerSuggestions] = useState<Record<string, string>>({});
@@ -91,60 +90,42 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
   }, [formData.player_names]);
 
   const handlePlayerChange = (value: string | string[]) => {
-    const newPlayers = Array.isArray(value) ? value : [value].filter(Boolean);
+    
+    const selectedPlayer = Array.isArray(value) ? value[0] : value;
+    const newPlayers = selectedPlayer ? [selectedPlayer] : [];
     const updates: any = { player_names: newPlayers };
     
-    // Always adjust position_roles array to match player count
-    const currentPositions = formData.position_roles || [];
-    const newPositions: string[] = [];
-    
-    // Build new positions array
-    for (let i = 0; i < newPlayers.length; i++) {
-      const player = newPlayers[i];
+    // Auto-suggest position for single player
+    if (selectedPlayer) {
+      const playerLower = selectedPlayer.toLowerCase();
+      let suggestedPosition = '';
       
-      if (i < currentPositions.length && currentPositions[i]) {
-        // Keep existing position if valid
-        newPositions.push(currentPositions[i]);
-      } else {
-        // Try to get suggested position for new/empty slots
-        const suggestedPosition = playerSuggestions[player] || '';
-        newPositions.push(suggestedPosition);
+      if (playerLower.includes('top') || playerLower.includes('impact')) {
+        suggestedPosition = 'TOP';
+      } else if (playerLower.includes('jungle') || playerLower.includes('jng')) {
+        suggestedPosition = 'JNG';
+      } else if (playerLower.includes('mid') || playerLower.includes('faker')) {
+        suggestedPosition = 'MID';
+      } else if (playerLower.includes('adc') || playerLower.includes('bot')) {
+        suggestedPosition = 'BOT';
+      } else if (playerLower.includes('sup') || playerLower.includes('support')) {
+        suggestedPosition = 'SUP';
       }
+      
+      updates.position_roles = [suggestedPosition];
+    } else {
+      updates.position_roles = [];
     }
     
-    updates.position_roles = newPositions;
     onChange(updates);
   };
 
-  const handlePositionChange = (event: SelectChangeEvent<string[]>) => {
-    // Mark that user has started interacting with positions
-    onPositionInteractionStart?.();
-    
-    const positions = typeof event.target.value === 'string' 
-      ? event.target.value.split(',') 
-      : event.target.value;
-    
-    // Ensure positions array matches player count
-    const playerCount = formData.player_names?.length || 0;
-    const adjustedPositions = [...positions];
-    
-    // Pad with empty strings if needed
-    while (adjustedPositions.length < playerCount) {
-      adjustedPositions.push('');
-    }
-    
-    // Truncate if too many positions
-    if (adjustedPositions.length > playerCount) {
-      adjustedPositions.splice(playerCount);
-    }
-    
-    onChange({ position_roles: adjustedPositions });
+  const handlePositionChange = (event: SelectChangeEvent<string>) => {
+    const selectedPosition = event.target.value as string;
+    onChange({ position_roles: [selectedPosition] });
   };
 
   const applySuggestedPosition = (playerIndex: number, position: string) => {
-    // Mark that user has started interacting with positions
-    onPositionInteractionStart?.();
-    
     const newPositions = [...(formData.position_roles || [])];
     newPositions[playerIndex] = position;
     onChange({ position_roles: newPositions });
@@ -169,19 +150,19 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
       <Box sx={{ mb: 4 }}>
         <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
           <Group sx={{ mr: 1, color: 'primary.main' }} />
-          Players
+          Select Player
         </Typography>
         
         <EnhancedAutocomplete
-          multiple
+          multiple={false}
           options={availablePlayers}
-          value={formData.player_names || []}
+          value={formData.player_names?.[0] || ''}
           onChange={handlePlayerChange}
           loading={loadingPlayers}
-          placeholder="Search and select players..."
+          placeholder="Search and select a player..."
           error={errors.player_names}
-          label="Player Names"
-          helpText="Select 1-5 players for your prediction"
+          label="Player Name"
+          helpText="Select one player for your prediction"
         />
 
         {formData.player_names?.length > 0 && (
@@ -218,36 +199,15 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
         <Box sx={{ mb: 4 }}>
           <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
             <SportsEsports sx={{ mr: 1, color: 'secondary.main' }} />
-            Positions
+            Player Position
           </Typography>
 
           <FormControl fullWidth error={!!errors.position_roles}>
-            <InputLabel>Position Roles</InputLabel>
+            <InputLabel>Position Role</InputLabel>
             <Select
-              multiple
-              value={formData.position_roles || []}
-              label="Position Roles"
+              value={formData.position_roles?.[0] || ''}
+              label="Position Role"
               onChange={handlePositionChange}
-              onFocus={() => onPositionInteractionStart?.()}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {(selected as string[]).map((value, index) => {
-                    const position = POSITIONS.find(p => p.value === value);
-                    return (
-                      <Chip
-                        key={`${value}-${index}`}
-                        label={position?.label || value}
-                        size="small"
-                        sx={{
-                          backgroundColor: position?.color || 'grey.500',
-                          color: 'white',
-                          fontWeight: 500,
-                        }}
-                      />
-                    );
-                  })}
-                </Box>
-              )}
             >
               {POSITIONS.map((position) => (
                 <MenuItem key={position.value} value={position.value}>
@@ -360,9 +320,14 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
             const positions = formData.position_roles || [];
             const emptyPositions = positions.filter((pos: string) => !pos || pos.trim() === '').length;
             
+            // Only show validation messages if:
+            // 1. There are no empty positions (success case), OR
+            // 2. User has actually triggered validation errors through interaction
+            const shouldShowValidation = emptyPositions === 0 || Boolean(errors.position_roles);
+            
             if (positions.length === playerCount && emptyPositions === 0) {
               return `✅ Perfect! You have selected ${playerCount} players with all positions assigned.`;
-            } else if (positions.length === playerCount && emptyPositions > 0) {
+            } else if (positions.length === playerCount && emptyPositions > 0 && Boolean(errors.position_roles)) {
               return `⚠️ Please assign positions for ${emptyPositions} remaining player${emptyPositions > 1 ? 's' : ''}.`;
             } else {
               return `ℹ️ Select players above to assign their positions.`;

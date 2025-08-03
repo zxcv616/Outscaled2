@@ -17,17 +17,6 @@ import {
   Close,
   CheckCircle,
 } from '@mui/icons-material';
-// Simple debounce implementation to avoid lodash dependency
-const debounce = <T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): ((...args: Parameters<T>) => void) => {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
 
 interface EnhancedAutocompleteProps {
   options: string[];
@@ -128,18 +117,12 @@ export const EnhancedAutocomplete: React.FC<EnhancedAutocompleteProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [focused, setFocused] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  // Debounced search to improve performance
-  const debouncedSetInputValue = useMemo(
-    () => debounce((newValue: string) => {
-      setInputValue(newValue);
-    }, 300),
-    []
-  );
-
+  // Direct input change handling for immediate response
   const handleInputChange = useCallback((event: any, newInputValue: string) => {
-    debouncedSetInputValue(newInputValue);
-  }, [debouncedSetInputValue]);
+    setInputValue(newInputValue);
+  }, []);
 
   const handleChange = useCallback((event: any, newValue: any) => {
     if (multiple) {
@@ -152,11 +135,25 @@ export const EnhancedAutocomplete: React.FC<EnhancedAutocompleteProps> = ({
 
   const handleFocus = useCallback(() => {
     setFocused(true);
+    setOpen(true);
+    // Clear input to show all options on focus
+    setInputValue('');
   }, []);
+
+  const handleClick = useCallback(() => {
+    if (!open) {
+      setOpen(true);
+      // Clear input value when opening to show all options
+      if (!focused) {
+        setInputValue('');
+      }
+    }
+  }, [open, focused]);
 
   const handleBlur = useCallback(() => {
     setFocused(false);
     setTouched(true);
+    setOpen(false);
   }, []);
 
   const filteredOptions = useMemo(() => {
@@ -164,7 +161,10 @@ export const EnhancedAutocomplete: React.FC<EnhancedAutocompleteProps> = ({
       return filterOptions(options, inputValue);
     }
     
-    if (!inputValue) return options;
+    // Always show all options when input is empty or on first focus
+    if (!inputValue || inputValue.trim() === '') {
+      return options;
+    }
     
     return options.filter((option) =>
       option.toLowerCase().includes(inputValue.toLowerCase())
@@ -265,7 +265,10 @@ export const EnhancedAutocomplete: React.FC<EnhancedAutocompleteProps> = ({
   };
 
   return (
-    <ClickAwayListener onClickAway={() => setFocused(false)}>
+    <ClickAwayListener onClickAway={() => {
+      setFocused(false);
+      setOpen(false);
+    }}>
       <Box sx={{ position: 'relative' }}>
         <Autocomplete
           multiple={multiple}
@@ -276,6 +279,9 @@ export const EnhancedAutocomplete: React.FC<EnhancedAutocompleteProps> = ({
           onInputChange={handleInputChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onOpen={() => setOpen(true)}
+          onClose={() => setOpen(false)}
+          open={open}
           disabled={disabled}
           loading={loading}
           groupBy={groupBy}
@@ -319,6 +325,7 @@ export const EnhancedAutocomplete: React.FC<EnhancedAutocompleteProps> = ({
               placeholder={focused ? placeholder : ''}
               error={showError}
               helperText={showError ? error : helpText}
+              onClick={handleClick}
               InputProps={{
                 ...params.InputProps,
                 endAdornment: (

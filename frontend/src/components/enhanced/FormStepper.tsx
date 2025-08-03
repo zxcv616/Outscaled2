@@ -22,7 +22,7 @@ import {
   RadioButtonUnchecked,
   Warning,
 } from '@mui/icons-material';
-import { FormStep } from '../../hooks/usePredictionForm';
+import { FormStep } from './hooks/usePredictionForm';
 
 interface FormStepperProps {
   steps: FormStep[];

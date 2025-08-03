@@ -1,3 +1,25 @@
+"""
+BETTING LOGIC PREDICTION MODEL
+
+This model has been updated to work with CORRECTED betting terminology.
+
+KEY CHANGES:
+============
+- Now expects 'combined_*' features representing TOTAL stats across map ranges
+- Maintains backward compatibility with 'avg_*' features
+- All calculations now reflect proper betting market interpretation
+- Expected stat calculations use COMBINED performance data
+
+BETTING CONTEXT:
+===============
+When predicting "Maps 1-2 Kills 8.5", the model now correctly:
+- Uses historical COMBINED kills across maps 1-2 per series
+- Calculates expected COMBINED performance for the upcoming maps
+- Provides confidence intervals based on COMBINED stat volatility
+
+This ensures predictions align with how betting markets actually work.
+"""
+
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Any
@@ -529,15 +551,23 @@ class PredictionModel:
     
     def _calculate_expected_stat(self, features: Dict[str, float]) -> float:
         """
-        Calculate expected statistic using empirical regression-based approach.
-        Uses model-inferred estimates based on calibrated probabilities.
+        Calculate expected statistic using BETTING LOGIC for combined stats.
+        
+        CRITICAL: Now works with COMBINED statistics across map ranges, not averages.
+        This reflects proper betting terminology where "Maps 1-2" means total performance.
         """
         # Get base model confidence for empirical estimation
         feature_vector = self._prepare_features(features)
         prediction_proba = self.model.predict_proba(feature_vector)[0]
         
-        # Base expected value from historical average
-        base_expected = features.get('avg_kills', 0)
+        # BETTING LOGIC: Base expected value from COMBINED performance average
+        # Try new combined features first, fall back to old for compatibility
+        base_expected = (features.get('combined_kills', 0) or 
+                        features.get('combined_assists', 0) or 
+                        features.get('avg_kills', 0) or 
+                        features.get('avg_assists', 0))
+        
+        logger.info(f"Expected stat calculation using COMBINED logic: base_expected={base_expected}")
         
         # Use model confidence to adjust expected stat
         # Higher confidence in OVER prediction suggests higher expected performance
@@ -558,8 +588,9 @@ class PredictionModel:
         # Position factor with empirical calibration
         position_factor = features.get('position_factor', 1.0)
         
-        # Sample size adjustment - more data = more reliable prediction
-        sample_size = features.get('maps_played', 10)
+        # BETTING LOGIC: Sample size is now series, not individual maps
+        sample_size = (features.get('series_played', 0) or 
+                      features.get('maps_played', 10))  # Fallback for compatibility
         sample_confidence = min(sample_size / 20.0, 1.0)
         
         # Calculate final expected stat with empirical model adjustment
@@ -568,13 +599,20 @@ class PredictionModel:
         # Apply sample size confidence adjustment
         expected_stat = expected_stat * sample_confidence + (base_expected * (1 - sample_confidence))
         
+        logger.info(f"Final expected stat (COMBINED): {expected_stat}")
         return max(expected_stat, 0)  # Ensure non-negative
     
     def _calculate_confidence_interval(self, features: Dict[str, float], expected_stat: float) -> List[float]:
-        """Calculate confidence interval"""
-        # Simple confidence interval based on sample size and volatility
-        std_dev = features.get('std_dev_kills', 0) or features.get('std_dev_assists', 0)
-        sample_size = features.get('maps_played', 0)
+        """Calculate confidence interval using BETTING LOGIC for combined stats"""
+        # BETTING LOGIC: Use standard deviation of COMBINED performance
+        std_dev = (features.get('std_dev_combined_kills', 0) or 
+                  features.get('std_dev_combined_assists', 0) or
+                  features.get('std_dev_kills', 0) or 
+                  features.get('std_dev_assists', 0))  # Fallback for compatibility
+        
+        # BETTING LOGIC: Sample size is now series, not individual maps
+        sample_size = (features.get('series_played', 0) or 
+                      features.get('maps_played', 0))  # Fallback for compatibility
         
         # Standard error decreases with sample size
         if sample_size > 0:
@@ -592,13 +630,21 @@ class PredictionModel:
     
     def _calculate_bootstrap_confidence_interval(self, features: Dict[str, float], expected_stat: float, n_bootstrap: int = 1000) -> List[float]:
         """
-        Generate enhanced bootstrap confidence intervals for expected statistics.
-        Centers around the adjusted expected_stat and incorporates volatility.
+        Generate enhanced bootstrap confidence intervals using BETTING LOGIC.
+        Centers around the adjusted expected_stat and incorporates volatility for combined stats.
         """
-        # Extract relevant statistics
-        avg_stat = features.get('avg_kills', expected_stat)
-        std_dev = features.get('std_dev_kills', 1.0)
-        sample_size = features.get('maps_played', 10)
+        # BETTING LOGIC: Extract relevant COMBINED statistics
+        avg_stat = (features.get('combined_kills', 0) or 
+                   features.get('combined_assists', 0) or
+                   features.get('avg_kills', expected_stat))  # Fallback
+        
+        std_dev = (features.get('std_dev_combined_kills', 1.0) or 
+                  features.get('std_dev_combined_assists', 1.0) or
+                  features.get('std_dev_kills', 1.0))  # Fallback
+        
+        sample_size = (features.get('series_played', 10) or 
+                      features.get('maps_played', 10))  # Fallback
+        
         volatility = features.get('volatility', 0.3)
         form_z_score = features.get('form_z_score', 0)
         
@@ -636,13 +682,20 @@ class PredictionModel:
     
     def _calculate_quantile_confidence_interval(self, features: Dict[str, float], expected_stat: float) -> List[float]:
         """
-        Calculate quantile-based confidence interval as fallback for small samples.
-        Uses IQR-based approach instead of unrealistic Gaussian assumptions.
+        Calculate quantile-based confidence interval using BETTING LOGIC.
+        Uses IQR-based approach for combined stats instead of unrealistic Gaussian assumptions.
         """
-        # Get historical data for quantile calculation
-        avg_stat = features.get('avg_kills', expected_stat)
-        std_dev = features.get('std_dev_kills', 1.0)
-        sample_size = features.get('maps_played', 10)
+        # BETTING LOGIC: Get COMBINED historical data for quantile calculation
+        avg_stat = (features.get('combined_kills', 0) or 
+                   features.get('combined_assists', 0) or
+                   features.get('avg_kills', expected_stat))  # Fallback
+        
+        std_dev = (features.get('std_dev_combined_kills', 1.0) or 
+                  features.get('std_dev_combined_assists', 1.0) or
+                  features.get('std_dev_kills', 1.0))  # Fallback
+        
+        sample_size = (features.get('series_played', 10) or 
+                      features.get('maps_played', 10))  # Fallback
         
         # For small samples, use IQR-based approach
         if sample_size < 10:
@@ -855,12 +908,20 @@ class PredictionModel:
         return " ".join(reasoning_parts)
     
     def _prepare_player_stats(self, features: Dict[str, float]) -> Dict[str, float]:
-        """Prepare player stats for response"""
+        """Prepare player stats for response using BETTING LOGIC"""
         return {
+            # BETTING LOGIC: Include combined stats
+            'combined_kills': round(features.get('combined_kills', 0), 1),
+            'combined_assists': round(features.get('combined_assists', 0), 1),
+            'series_played': int(features.get('series_played', 0)),
+            
+            # Backward compatibility
             'avg_kills': round(features.get('avg_kills', 0), 1),
             'avg_assists': round(features.get('avg_assists', 0), 1),
-            'form_z_score': round(features.get('form_z_score', 0), 2),
             'maps_played': int(features.get('maps_played', 0)),
+            
+            # Common stats
+            'form_z_score': round(features.get('form_z_score', 0), 2),
             'position_factor': round(features.get('position_factor', 1.0), 2),
             'avg_deaths': round(features.get('avg_deaths', 0), 1),
             'avg_damage': round(features.get('avg_damage', 0), 0),
@@ -893,12 +954,21 @@ class PredictionModel:
 
     def _calculate_volatility_index(self, features: Dict[str, float]) -> float:
         """
-        Calculate a composite volatility index
+        Calculate a composite volatility index using BETTING LOGIC for combined stats
         """
-        avg_stat = features.get('avg_kills', 0)
-        std_dev = features.get('std_dev_kills', 0)
+        # BETTING LOGIC: Use combined stats for volatility calculation
+        avg_stat = (features.get('combined_kills', 0) or 
+                   features.get('combined_assists', 0) or
+                   features.get('avg_kills', 0))  # Fallback
+        
+        std_dev = (features.get('std_dev_combined_kills', 0) or 
+                  features.get('std_dev_combined_assists', 0) or
+                  features.get('std_dev_kills', 0))  # Fallback
+        
         form_z_score = features.get('form_z_score', 0)
-        sample_size = features.get('maps_played', 10)
+        
+        sample_size = (features.get('series_played', 10) or 
+                      features.get('maps_played', 10))  # Fallback
         
         if avg_stat == 0 or std_dev == 0:
             return 0.0
@@ -912,7 +982,7 @@ class PredictionModel:
 
     def _generate_confidence_warning(self, features: Dict[str, float]) -> str:
         """
-        Generate confidence warnings based on volatility and other factors
+        Generate confidence warnings based on volatility and other factors using BETTING LOGIC
         """
         volatility_index = self._calculate_volatility_index(features)
         warnings = []
@@ -922,7 +992,10 @@ class PredictionModel:
         elif volatility_index > 0.5:
             warnings.append("⚠️ Moderate volatility detected")
         
-        sample_size = features.get('maps_played', 10)
+        # BETTING LOGIC: Use series count for sample size warnings
+        sample_size = (features.get('series_played', 10) or 
+                      features.get('maps_played', 10))  # Fallback
+        
         if sample_size < 5:
             warnings.append("⚠️ Very limited sample size")
         elif sample_size < 10:

@@ -38,14 +38,12 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
   const [availableTeams, setAvailableTeams] = useState<string[]>([]);
   const [availableTournaments, setAvailableTournaments] = useState<string[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(false);
-  // const [loadingTournaments] = useState(false); // Unused for now
   const [teamSuggestions, setTeamSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoadingTeams(true);
-        // setLoadingTournaments(true);
         
         const [teamsResponse, tournamentsResponse] = await Promise.all([
           predictionApi.getTeams(),
@@ -63,7 +61,6 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
         console.error('Failed to load match data:', error);
       } finally {
         setLoadingTeams(false);
-        // setLoadingTournaments(false);
       }
     };
 

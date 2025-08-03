@@ -1,3 +1,36 @@
+"""
+CRITICAL BETTING LOGIC IMPLEMENTATION
+
+This module implements the corrected betting logic for League of Legends prediction system.
+
+BETTING TERMINOLOGY EXPLANATION:
+===============================
+
+When betting markets refer to "Maps 1-2 Kills" or similar map range props, they mean:
+- COMBINED/TOTAL statistics across those maps, NOT averages
+- Example: "Maps 1-2 Kills" = Player's kills in Map 1 + Player's kills in Map 2
+
+PREVIOUS (INCORRECT) IMPLEMENTATION:
+- System calculated AVERAGE kills per map in the range
+- This fundamentally misunderstood betting terminology
+- Led to incorrect predictions for all map range props
+
+CORRECTED IMPLEMENTATION:
+- System now calculates COMBINED stats per series (map range)
+- Groups data by player and match_series
+- Sums statistics across maps within each series
+- Then calculates mean/std on those COMBINED totals
+- This correctly reflects how betting markets work
+
+EXAMPLE:
+========
+Player has 3 kills in Map 1, 5 kills in Map 2
+- OLD (WRONG): "Maps 1-2" = (3+5)/2 = 4.0 average
+- NEW (CORRECT): "Maps 1-2" = 3+5 = 8 combined
+
+This change affects every prediction and is critical for accuracy.
+"""
+
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
@@ -318,21 +351,58 @@ class DataProcessor:
         return sources
     
     def aggregate_stats(self, player_data: pd.DataFrame, prop_type: str) -> Dict[str, float]:
-        """Aggregate statistics across the map range"""
+        """
+        Aggregate statistics across the map range using BETTING LOGIC.
+        
+        CRITICAL: For map ranges (e.g., "Maps 1-2"), betting terminology means COMBINED/TOTAL
+        stats across those maps, NOT AVERAGES. This reflects how betting markets work.
+        
+        Example: "Maps 1-2 Kills" means total kills across maps 1 AND 2 combined.
+        """
         if prop_type not in ['kills', 'assists']:
             raise ValueError("prop_type must be 'kills' or 'assists'")
         
         # Debug logging
-        logger.info(f"Aggregating stats for {prop_type} across {len(player_data)} maps")
+        logger.info(f"Aggregating COMBINED stats for {prop_type} across {len(player_data)} maps (BETTING LOGIC)")
         logger.info(f"Sample {prop_type} values: {player_data[prop_type].head(10).tolist()}")
         logger.info(f"Position distribution: {player_data['position'].value_counts().to_dict()}")
         
-        # Group by player and aggregate
-        agg_stats = player_data.groupby('playername').agg({
-            prop_type: ['mean', 'std', 'count'],
+        # BETTING LOGIC FIX: For map ranges, we want TOTAL/COMBINED stats across the maps
+        # First sum within each match series, then get stats on those totals
+        logger.info("Calculating series totals (combined stats per series) for betting logic")
+        
+        # Group by player and match series, then sum to get combined stats per series
+        series_totals = player_data.groupby(['playername', 'match_series']).agg({
+            prop_type: 'sum',  # COMBINED stats across maps in the range
+            'deaths': 'sum',
+            'damagetochampions': 'sum', 
+            'visionscore': 'sum',
+            'total cs': 'sum',
+            'goldat10': 'sum',
+            'xpat10': 'sum',
+            'csat10': 'sum',
+            'golddiffat15': 'sum',
+            'xpdiffat15': 'sum',
+            'csdiffat15': 'sum',
+            'killsat15': 'sum',
+            'assistsat15': 'sum',
+            'deathsat15': 'sum',
+            'goldat20': 'sum',
+            'xpat20': 'sum',
+            'csat20': 'sum',
+            'killsat20': 'sum',
+            'assistsat20': 'sum',
+            'deathsat20': 'sum'
+        }).round(2)
+        
+        logger.info(f"Generated {len(series_totals)} series totals for combined stats")
+        
+        # Now aggregate these series totals per player to get mean/std of combined performance
+        agg_stats = series_totals.groupby('playername').agg({
+            prop_type: ['mean', 'std', 'count'],  # Stats on the COMBINED performance
             'deaths': 'mean',
             'damagetochampions': 'mean',
-            'visionscore': 'mean',
+            'visionscore': 'mean', 
             'total cs': 'mean',
             'goldat10': 'mean',
             'xpat10': 'mean',
@@ -357,15 +427,21 @@ class DataProcessor:
         # Debug logging for aggregated results
         for player_name in agg_stats.index:
             player_stats = agg_stats.loc[player_name]
-            logger.info(f"Player {player_name} - {prop_type}_mean: {player_stats.get(f'{prop_type}_mean', 0)}")
+            combined_avg = player_stats.get(f'{prop_type}_mean', 0)
+            logger.info(f"Player {player_name} - {prop_type} COMBINED avg per series: {combined_avg}")
         
         return agg_stats.to_dict('index')
     
     def engineer_features(self, player_data: pd.DataFrame, prop_type: str) -> Dict[str, float]:
-        """Engineer features as specified in the MVP"""
+        """
+        Engineer features using BETTING LOGIC for combined statistics.
+        
+        CRITICAL: Features now reflect COMBINED stats across map ranges, not averages.
+        This aligns with betting terminology where "Maps 1-2" means total performance.
+        """
         features = {}
         
-        # Get aggregated stats
+        # Get aggregated stats (now uses combined/total logic)
         agg_stats = self.aggregate_stats(player_data, prop_type)
         
         # For simplicity, we'll use the first player's stats
@@ -376,22 +452,39 @@ class DataProcessor:
         
         stats = agg_stats[player_name]
         
-        # Recent Stats
-        features['avg_' + prop_type] = stats.get(f'{prop_type}_mean', 0)
-        features['std_dev_' + prop_type] = stats.get(f'{prop_type}_std', 0)
-        features['maps_played'] = stats.get(f'{prop_type}_count', 0)
+        # BETTING LOGIC: These are now COMBINED stats per series, not individual map averages
+        features['combined_' + prop_type] = stats.get(f'{prop_type}_mean', 0)  # Average of combined performance
+        features['std_dev_combined_' + prop_type] = stats.get(f'{prop_type}_std', 0)  # Std dev of combined performance
+        features['series_played'] = stats.get(f'{prop_type}_count', 0)  # Number of series (not individual maps)
         
-        # Long-term averages (using full dataset)
-        full_dataset_stats = self.combined_data.groupby('playername')[prop_type].mean()
-        features['longterm_' + prop_type + '_avg'] = full_dataset_stats.get(player_name, 0)
+        # For backward compatibility, keep old feature names but mark them as combined
+        features['avg_' + prop_type] = features['combined_' + prop_type]  # Backward compatibility
+        features['std_dev_' + prop_type] = features['std_dev_combined_' + prop_type]  # Backward compatibility
+        features['maps_played'] = features['series_played']  # Backward compatibility (though it's really series)
         
-        # Deviation metrics
-        recent_avg = features['avg_' + prop_type]
-        longterm_avg = features['longterm_' + prop_type + '_avg']
+        # Long-term averages (need to calculate combined stats from full dataset for betting logic)
+        logger.info("Calculating long-term combined averages for betting context")
         
-        if longterm_avg > 0:
-            features['form_z_score'] = (recent_avg - longterm_avg) / max(features['std_dev_' + prop_type], 0.1)
-            features['form_deviation_ratio'] = recent_avg / longterm_avg
+        # Get all data for this player and calculate combined stats per series
+        player_full_data = self.combined_data[self.combined_data['playername'] == player_name]
+        if not player_full_data.empty and 'match_series' in player_full_data.columns:
+            # Calculate combined stats per series for long-term average
+            longterm_series_totals = player_full_data.groupby('match_series')[prop_type].sum()
+            longterm_combined_avg = longterm_series_totals.mean()
+        else:
+            # Fallback to simple average if match_series not available
+            longterm_combined_avg = self.combined_data[self.combined_data['playername'] == player_name][prop_type].mean()
+        
+        features['longterm_combined_' + prop_type] = longterm_combined_avg
+        features['longterm_' + prop_type + '_avg'] = longterm_combined_avg  # Backward compatibility
+        
+        # Deviation metrics (now based on combined performance)
+        recent_combined = features['combined_' + prop_type]
+        longterm_combined = features['longterm_combined_' + prop_type]
+        
+        if longterm_combined > 0:
+            features['form_z_score'] = (recent_combined - longterm_combined) / max(features['std_dev_combined_' + prop_type], 0.1)
+            features['form_deviation_ratio'] = recent_combined / longterm_combined
         else:
             features['form_z_score'] = 0
             features['form_deviation_ratio'] = 1
@@ -429,10 +522,18 @@ class DataProcessor:
         return features
     
     def _get_default_features(self) -> Dict[str, float]:
-        """Return default features when no data is available"""
+        """Return default features when no data is available (using betting logic naming)"""
         return {
+            # New betting logic features (combined stats)
+            'combined_kills': 0, 'combined_assists': 0, 
+            'std_dev_combined_kills': 0, 'std_dev_combined_assists': 0,
+            'series_played': 0, 'longterm_combined_kills': 0, 'longterm_combined_assists': 0,
+            
+            # Backward compatibility features 
             'avg_kills': 0, 'avg_assists': 0, 'std_dev_kills': 0, 'std_dev_assists': 0,
             'maps_played': 0, 'longterm_kills_avg': 0, 'longterm_assists_avg': 0,
+            
+            # Common features
             'form_z_score': 0, 'form_deviation_ratio': 1, 'position_factor': 1.0,
             'sample_size_score': 0, 'avg_deaths': 0, 'avg_damage': 0, 'avg_vision': 0,
             'avg_cs': 0, 'avg_gold_at_10': 0, 'avg_xp_at_10': 0, 'avg_cs_at_10': 0,
@@ -579,15 +680,28 @@ class DataProcessor:
         return features
     
     def _add_combo_features(self, features: Dict[str, float], player_data: pd.DataFrame, prop_type: str) -> Dict[str, float]:
-        """Add features specific to combo predictions"""
-        # Aggregate stats across all players in the combo
-        combo_stats = player_data.groupby('gameid')[prop_type].sum().reset_index()
+        """
+        Add features specific to combo predictions using BETTING LOGIC.
         
-        features['combo_avg_' + prop_type] = combo_stats[prop_type].mean()
-        features['combo_std_' + prop_type] = combo_stats[prop_type].std()
-        features['combo_maps_played'] = len(combo_stats)
+        CRITICAL: For combos, we need COMBINED stats across players AND maps in the range.
+        """
+        # BETTING LOGIC: For combos across map ranges, sum all players' performance within each series
+        # Then get stats on those combined totals
+        logger.info("Calculating combo features using betting logic (combined stats across players and maps)")
         
-        # Apply confidence penalty for combos
+        # Group by match_series and sum across all players for the combo
+        combo_series_totals = player_data.groupby('match_series')[prop_type].sum().reset_index()
+        
+        features['combo_combined_' + prop_type] = combo_series_totals[prop_type].mean()  # Avg of combined performance
+        features['combo_std_combined_' + prop_type] = combo_series_totals[prop_type].std()  # Std of combined performance
+        features['combo_series_played'] = len(combo_series_totals)  # Number of series
+        
+        # Backward compatibility
+        features['combo_avg_' + prop_type] = features['combo_combined_' + prop_type]
+        features['combo_std_' + prop_type] = features['combo_std_combined_' + prop_type]
+        features['combo_maps_played'] = features['combo_series_played']
+        
+        # Apply confidence penalty for combos (betting markets are harder to predict)
         features['combo_confidence_penalty'] = 0.9  # 10% penalty for combo predictions
         
         return features

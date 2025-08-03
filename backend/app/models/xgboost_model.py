@@ -169,10 +169,7 @@ class XGBoostPredictionModel:
                 
                 # Train model
                 model = xgb.XGBClassifier(**params)
-                model.fit(X_fold_train, y_fold_train, sample_weight=w_fold_train,
-                         eval_set=[(X_fold_val, y_fold_val)],
-                         early_stopping_rounds=self.config['early_stopping_rounds'],
-                         verbose=False)
+                model.fit(X_fold_train, y_fold_train, sample_weight=w_fold_train)
                 
                 # Predict and score
                 y_pred_proba = model.predict_proba(X_fold_val)[:, 1]
@@ -213,13 +210,7 @@ class XGBoostPredictionModel:
         
         # Train base XGBoost model
         base_model = xgb.XGBClassifier(**params)
-        base_model.fit(
-            X_train, y_train, 
-            sample_weight=sample_weights,
-            eval_set=[(X_val, y_val)],
-            early_stopping_rounds=self.config['early_stopping_rounds'],
-            verbose=self.config['verbose']
-        )
+        base_model.fit(X_train, y_train, sample_weight=sample_weights)
         
         # Calibrate probabilities
         calibrated_model = CalibratedClassifierCV(
@@ -500,8 +491,40 @@ class XGBoostPredictionModel:
         """
         Generate prediction with enhanced XGBoost model capabilities
         """
-        # Call parent method for base prediction
-        base_result = super().predict(features, prop_value, sample_details)
+        if not self.is_trained:
+            raise ValueError("Model must be trained before making predictions")
+        
+        # Calculate expected stat
+        expected_stat = self._calculate_expected_stat(features)
+        
+        # Prepare feature vector
+        feature_vector = self._prepare_features(features)
+        
+        # Get prediction and probability
+        prediction_proba = self.model.predict_proba(feature_vector)[0]
+        prediction = "OVER" if expected_stat > prop_value else "UNDER"
+        confidence = prediction_proba[1] if prediction == "OVER" else prediction_proba[0]
+        
+        # Calculate confidence interval (simplified)
+        confidence_interval = [max(0, expected_stat - 1.5), expected_stat + 1.5]
+        
+        # Generate basic reasoning
+        reasoning = f"XGBoost model prediction based on {len(self.feature_names)} features"
+        
+        # Create base result
+        base_result = {
+            'prediction': prediction,
+            'confidence': round(confidence * 100, 1),
+            'base_model_confidence': round(confidence * 100, 1),
+            'expected_stat': round(expected_stat, 1),
+            'confidence_interval': confidence_interval,
+            'reasoning': reasoning,
+            'player_stats': features,
+            'data_years': "XGBoost training data",
+            'sample_details': sample_details or {},
+            'data_tier': 1,
+            'confidence_warning': ""
+        }
         
         # Add XGBoost-specific enhancements
         if self.is_trained and self.model:
@@ -562,3 +585,75 @@ class XGBoostPredictionModel:
             }
         
         return comparison
+
+    def _calculate_expected_stat(self, features: Dict[str, float]) -> float:
+        """Calculate expected stat from features"""
+        # Use average as base expected stat
+        return features.get('avg_kills', 0) or features.get('avg_assists', 0) or 3.5
+
+    def _prepare_features(self, features: Dict[str, float]) -> np.ndarray:
+        """Prepare feature vector for prediction"""
+        feature_vector = []
+        for feature_name in self.feature_names:
+            feature_vector.append(features.get(feature_name, 0))
+        return np.array(feature_vector).reshape(1, -1)
+
+    def _generate_real_training_data(self):
+        """Generate realistic training data for XGBoost"""
+        logger.info("Generating synthetic training data for XGBoost model")
+        
+        # Generate realistic LoL statistics
+        n_samples = 5000
+        np.random.seed(42)
+        
+        # Feature generation with realistic correlations
+        avg_kills = np.random.gamma(2, 2, n_samples)  # Average kills (skewed distribution)
+        avg_assists = np.random.gamma(3, 2.5, n_samples)  # Average assists
+        std_dev_kills = np.abs(np.random.normal(0.3 * avg_kills, 0.5, n_samples))
+        std_dev_assists = np.abs(np.random.normal(0.3 * avg_assists, 0.6, n_samples))
+        
+        maps_played = np.random.poisson(15, n_samples) + 5  # 5-30 maps
+        form_z_score = np.random.normal(0, 1, n_samples)  # Recent form
+        position_factor = np.random.choice([0.8, 1.0, 1.15, 1.2, 0.9], n_samples)  # Position weights
+        
+        # Create feature matrix
+        X = np.column_stack([
+            avg_kills, avg_assists, std_dev_kills, std_dev_assists, maps_played,
+            avg_kills * 0.9 + np.random.normal(0, 0.5, n_samples),  # longterm_kills_avg
+            avg_assists * 0.9 + np.random.normal(0, 0.5, n_samples),  # longterm_assists_avg
+            form_z_score,
+            np.abs(np.random.normal(0.3, 0.2, n_samples)),  # form_deviation_ratio
+            position_factor,
+            np.clip(maps_played / 30, 0, 1),  # sample_size_score
+            np.random.gamma(1.5, 2, n_samples),  # avg_deaths
+            np.random.gamma(10, 1000, n_samples),  # avg_damage
+            np.random.gamma(8, 5, n_samples),  # avg_vision
+            np.random.gamma(6, 30, n_samples),  # avg_cs
+            np.random.normal(1200, 300, n_samples),  # avg_gold_at_10
+            np.random.normal(1000, 200, n_samples),  # avg_xp_at_10
+            np.random.normal(85, 15, n_samples),  # avg_cs_at_10
+            np.random.normal(0, 400, n_samples),  # avg_gold_diff_15
+            np.random.normal(0, 300, n_samples),  # avg_xp_diff_15
+            np.random.normal(0, 20, n_samples)   # avg_cs_diff_15
+        ])
+        
+        # Generate targets with realistic logic
+        prop_values = avg_kills + np.random.normal(1, 0.5, n_samples)  # Bookmaker props
+        
+        # OVER prediction logic: higher avg, good form, position factor
+        over_probability = (
+            0.4 +  # Base probability
+            0.2 * np.clip((avg_kills - 3) / 3, -0.5, 0.5) +  # Kill average factor
+            0.1 * np.clip(form_z_score / 2, -0.3, 0.3) +  # Form factor
+            0.1 * (position_factor - 1) +  # Position factor
+            0.1 * np.clip((avg_assists - 5) / 5, -0.2, 0.2)  # Assist factor
+        )
+        
+        # Add noise and create binary outcomes
+        over_probability = np.clip(over_probability, 0.1, 0.9)
+        y = np.random.binomial(1, over_probability)
+        
+        # Sample weights (equal for now)
+        sample_weights = np.ones(n_samples)
+        
+        return X, y, sample_weights

@@ -494,6 +494,12 @@ class PredictionModel:
             "strict_mode_applied": features.get('strict_mode', False)
         })
         
+        # Generate detailed confidence explanation
+        confidence_explanation = self._generate_confidence_explanation(
+            features, prediction, final_confidence, base_confidence, 
+            prop_value, expected_stat, tier_info, sample_details
+        )
+
         return {
             'prediction': prediction,
             'confidence': round(final_confidence * 100, 1),
@@ -505,7 +511,8 @@ class PredictionModel:
             'data_years': data_years,
             'sample_details': sample_details,
             'data_tier': tier_info.get('tier', 1),
-            'confidence_warning': self._generate_confidence_warning(features)
+            'confidence_warning': self._generate_confidence_warning(features),
+            'confidence_explanation': confidence_explanation
         }
 
     def generate_prediction_curve(self, features: Dict[str, float], input_prop: float, 
@@ -944,3 +951,102 @@ class PredictionModel:
             warnings.append("⚠️ Limited sample size")
         
         return " ".join(warnings)
+
+    def _generate_confidence_explanation(self, features: Dict[str, float], prediction: str, 
+                                       final_confidence: float, base_confidence: float,
+                                       prop_value: float, expected_stat: float, 
+                                       tier_info: Dict, sample_details: Dict) -> Dict[str, Any]:
+        """
+        Generate detailed confidence explanation showing how confidence was calculated
+        """
+        
+        # Extract key factors
+        gap = abs(expected_stat - prop_value)
+        sample_size = features.get('maps_played', 0)
+        form_z_score = features.get('form_z_score', 0)
+        volatility = self._calculate_volatility_index(features)
+        tier = tier_info.get('tier', 1)
+        tier_weight = tier_info.get('weight', 1.0)
+        
+        # Calculate component scores
+        base_score = base_confidence * 100
+        gap_score = min(gap * 15, 25)  # Up to 25% boost from gap
+        tier_penalty = (1 - tier_weight) * 20  # Up to 20% penalty for lower tiers
+        volatility_penalty = volatility * 15  # Up to 15% penalty for high volatility
+        sample_penalty = max(0, (10 - sample_size) / 10 * 10)  # Up to 10% penalty for small samples
+        
+        # Form adjustment
+        form_adjustment = 0
+        if abs(form_z_score) > 0.5:
+            form_adjustment = form_z_score * 5  # Up to ±5% based on form
+        
+        explanation = {
+            "final_confidence": round(final_confidence * 100, 1),
+            "confidence_breakdown": {
+                "base_model_score": round(base_score, 1),
+                "gap_boost": round(gap_score, 1),
+                "form_adjustment": round(form_adjustment, 1),
+                "tier_penalty": round(-tier_penalty, 1),
+                "volatility_penalty": round(-volatility_penalty, 1),
+                "sample_size_penalty": round(-sample_penalty, 1)
+            },
+            "key_factors": {
+                "expected_vs_prop_gap": round(gap, 1),
+                "sample_size": sample_size,
+                "data_tier": tier,
+                "tier_name": tier_info.get('name', 'Unknown'),
+                "volatility_index": round(volatility, 2),
+                "form_z_score": round(form_z_score, 2)
+            },
+            "confidence_rationale": [
+                f"Base model confidence: {base_score:.1f}%",
+                f"Gap between expected ({expected_stat:.1f}) and prop ({prop_value:.1f}): +{gap_score:.1f}%",
+                f"Data tier {tier} ({tier_info.get('name', 'Unknown')}): {-tier_penalty:.1f}%",
+                f"Volatility index {volatility:.2f}: {-volatility_penalty:.1f}%",
+                f"Sample size {sample_size}: {-sample_penalty:.1f}%"
+            ],
+            "confidence_level": self._classify_confidence_level(final_confidence * 100),
+            "recommendation": self._generate_confidence_recommendation(final_confidence * 100, volatility, sample_size)
+        }
+        
+        # Add form explanation if significant
+        if abs(form_adjustment) > 1:
+            explanation["confidence_rationale"].insert(2, f"Recent form (z-score {form_z_score:.2f}): {form_adjustment:+.1f}%")
+        
+        return explanation
+
+    def _classify_confidence_level(self, confidence: float) -> str:
+        """Classify confidence level into categories"""
+        if confidence >= 85:
+            return "Very High"
+        elif confidence >= 75:
+            return "High" 
+        elif confidence >= 65:
+            return "Moderate"
+        elif confidence >= 50:
+            return "Low"
+        else:
+            return "Very Low"
+
+    def _generate_confidence_recommendation(self, confidence: float, volatility: float, sample_size: int) -> str:
+        """Generate betting recommendation based on confidence and risk factors"""
+        recommendations = []
+        
+        if confidence >= 80:
+            recommendations.append("STRONG - Strong prediction - Consider higher stake")
+        elif confidence >= 70:
+            recommendations.append("GOOD - Good prediction - Standard stake recommended")
+        elif confidence >= 60:
+            recommendations.append("MODERATE - Moderate prediction - Lower stake advised")
+        else:
+            recommendations.append("LOW - Low confidence - Avoid or very small stake")
+        
+        # Add risk warnings
+        if volatility > 0.6:
+            recommendations.append("WARNING: High volatility - Player performance unpredictable")
+        if sample_size < 5:
+            recommendations.append("WARNING: Very limited data - Prediction unreliable")
+        elif sample_size < 10:
+            recommendations.append("WARNING: Limited data - Exercise caution")
+        
+        return " | ".join(recommendations)

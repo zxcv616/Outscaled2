@@ -14,4 +14,15 @@ pytest>=7.4.0
 pytest-asyncio>=0.21.0
 httpx>=0.24.0
 optuna>=3.5.0
-plotly>=5.17.0 
+plotly>=5.17.0
+
+# Authentication dependencies
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+
+# Enhanced security dependencies (optional - install with requirements_security.txt)
+# redis>=5.0.0
+# argon2-cffi>=23.1.0
+# httpx>=0.25.0 

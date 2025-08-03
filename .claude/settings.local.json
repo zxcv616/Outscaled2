@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python run_confidence_tests.py:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)"
+    ],
+    "deny": []
+  }
+}

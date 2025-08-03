@@ -4,6 +4,22 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
+// Mock axios completely
+const mockAxios = {
+  create: jest.fn(() => mockAxios),
+  get: jest.fn(),
+  post: jest.fn(),
+  put: jest.fn(),
+  delete: jest.fn(),
+  patch: jest.fn(),
+  interceptors: {
+    request: { use: jest.fn(), eject: jest.fn() },
+    response: { use: jest.fn(), eject: jest.fn() }
+  }
+};
+
+jest.mock('axios', () => mockAxios);
+
 // Mock ResizeObserver for recharts
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),

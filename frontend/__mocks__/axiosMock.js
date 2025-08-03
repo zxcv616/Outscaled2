@@ -1,4 +1,4 @@
-// Mock axios for testing
+// Mock axios for testing - ES module compatible
 const mockAxios = {
   create: jest.fn(() => mockAxios),
   get: jest.fn(),
@@ -19,4 +19,6 @@ const mockAxios = {
   }
 };
 
-module.exports = mockAxios; 
+// Support both CommonJS and ES module imports
+module.exports = mockAxios;
+module.exports.default = mockAxios; 

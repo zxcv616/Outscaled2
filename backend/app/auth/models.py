@@ -3,12 +3,19 @@
 Authentication Models and Database Schema
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, ForeignKey, Text, Enum
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 import uuid
+import enum
 
 Base = declarative_base()
+
+class SubscriptionTier(enum.Enum):
+    """Subscription tier levels"""
+    FREE = "free"
+    PRO = "pro"
+    ENTERPRISE = "enterprise"
 
 class User(Base):
     """User model for authentication"""
@@ -24,8 +31,17 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Security fields
+    email_verified = Column(Boolean, default=False)
+    failed_login_attempts = Column(Integer, default=0)
+    account_locked_until = Column(DateTime, nullable=True)
+    last_login = Column(DateTime, nullable=True)
+    password_changed_at = Column(DateTime, default=datetime.utcnow)
+    two_factor_enabled = Column(Boolean, default=False)
+    two_factor_secret = Column(String(100), nullable=True)
+    
     # Subscription tier
-    subscription_tier = Column(String(20), default="free")  # free, pro, enterprise
+    subscription_tier = Column(Enum(SubscriptionTier), default=SubscriptionTier.FREE)
     api_calls_limit = Column(Integer, default=100)  # Daily limit
     api_calls_used = Column(Integer, default=0)
     last_api_reset = Column(DateTime, default=datetime.utcnow)

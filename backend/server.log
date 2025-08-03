@@ -576,3 +576,25 @@ Traceback (most recent call last):
   File "C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\range.py", line 417, in get_loc
     raise KeyError(key)
 KeyError: 'playername'
+WARNING:  StatReload detected changes in 'app\utils\data_processor.py'. Reloading...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+INFO:app.models.prediction_model:Training prediction model...
+WARNING:app.utils.data_processor:Data files not found. Using empty DataFrame for testing.
+WARNING:app.utils.data_processor:No player data available
+WARNING:app.models.prediction_model:No real training data available, falling back to rule-based model
+WARNING:app.models.prediction_model:Using fallback training data - this should not be used in production
+INFO:app.models.prediction_model:Training data shape: (1000, 21)
+INFO:app.models.prediction_model:Class balance - OVER: 502 (50.2%), UNDER: 498 (49.8%)
+INFO:app.models.prediction_model:Average sample weight: 0.500
+INFO:app.models.prediction_model:Sample weight range: 0.500 - 0.500
+C:\Users\sandv\AppData\Roaming\Python\Python313\site-packages\sklearn\calibration.py:333: UserWarning: The `cv='prefit'` option is deprecated in 1.6 and will be removed in 1.8. You can use CalibratedClassifierCV(FrozenEstimator(estimator)) instead.
+  warnings.warn(
+INFO:app.models.prediction_model:Calibration validation - Mean predicted probability: 0.500
+INFO:app.models.prediction_model:Calibration validation - Actual OVER rate: 0.500
+INFO:app.models.prediction_model:Calibration validation - Accuracy: 0.520
+INFO:app.models.prediction_model:Calibration validation - Log loss: 0.685
+INFO:app.models.prediction_model:Model training completed with real historical data
+INFO:     Started server process [21336]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app\utils\data_processor.py'. Reloading...

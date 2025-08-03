@@ -1,0 +1,35 @@
+# Enhanced Security Dependencies for Outscaled.GG
+# Install with: pip install -r requirements_security.txt
+
+# Core FastAPI and existing requirements
+-r requirements.txt
+
+# Enhanced Security Dependencies
+redis>=5.0.0                    # Redis for rate limiting and caching
+argon2-cffi>=23.1.0             # Argon2 password hashing
+cryptography>=41.0.0            # Enhanced cryptographic functions
+httpx>=0.25.0                   # Async HTTP client for OAuth
+
+# Database enhancements
+psycopg2-binary>=2.9.7          # PostgreSQL adapter (production)
+sqlalchemy[asyncio]>=2.0.0      # Async SQLAlchemy support
+
+# Monitoring and observability
+sentry-sdk[fastapi]>=1.38.0     # Error tracking
+prometheus-client>=0.19.0       # Metrics collection
+structlog>=23.2.0               # Structured logging
+
+# Testing and validation
+pytest-mock>=3.12.0             # Enhanced mocking for tests
+pytest-cov>=4.1.0               # Code coverage
+factory-boy>=3.3.0              # Test data factories
+
+# Development tools
+black>=23.11.0                  # Code formatting
+flake8>=6.1.0                   # Linting
+mypy>=1.7.0                     # Type checking
+pre-commit>=3.5.0               # Git hooks
+
+# Performance monitoring
+uvloop>=0.19.0                  # High-performance event loop
+gunicorn>=21.2.0                # Production WSGI server

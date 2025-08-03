@@ -28,6 +28,7 @@ interface PlayerSelectionStepProps {
   formData: any;
   errors: Record<string, string>;
   onChange: (updates: any) => void;
+  onPositionInteractionStart?: () => void;
 }
 
 const POSITIONS = [
@@ -42,6 +43,7 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
   formData,
   errors,
   onChange,
+  onPositionInteractionStart,
 }) => {
   const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
@@ -92,37 +94,57 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
     const newPlayers = Array.isArray(value) ? value : [value].filter(Boolean);
     const updates: any = { player_names: newPlayers };
     
-    // Auto-adjust position_roles array to match player count
-    if (newPlayers.length !== formData.position_roles?.length) {
-      const newPositions = [...(formData.position_roles || [])];
+    // Always adjust position_roles array to match player count
+    const currentPositions = formData.position_roles || [];
+    const newPositions: string[] = [];
+    
+    // Build new positions array
+    for (let i = 0; i < newPlayers.length; i++) {
+      const player = newPlayers[i];
       
-      if (newPlayers.length > newPositions.length) {
-        // Add suggested positions for new players
-        for (let i = newPositions.length; i < newPlayers.length; i++) {
-          const player = newPlayers[i];
-          const suggestedPosition = playerSuggestions[player] || '';
-          newPositions.push(suggestedPosition);
-        }
+      if (i < currentPositions.length && currentPositions[i]) {
+        // Keep existing position if valid
+        newPositions.push(currentPositions[i]);
       } else {
-        // Remove excess positions
-        newPositions.splice(newPlayers.length);
+        // Try to get suggested position for new/empty slots
+        const suggestedPosition = playerSuggestions[player] || '';
+        newPositions.push(suggestedPosition);
       }
-      
-      updates.position_roles = newPositions;
     }
     
+    updates.position_roles = newPositions;
     onChange(updates);
   };
 
   const handlePositionChange = (event: SelectChangeEvent<string[]>) => {
+    // Mark that user has started interacting with positions
+    onPositionInteractionStart?.();
+    
     const positions = typeof event.target.value === 'string' 
       ? event.target.value.split(',') 
       : event.target.value;
     
-    onChange({ position_roles: positions });
+    // Ensure positions array matches player count
+    const playerCount = formData.player_names?.length || 0;
+    const adjustedPositions = [...positions];
+    
+    // Pad with empty strings if needed
+    while (adjustedPositions.length < playerCount) {
+      adjustedPositions.push('');
+    }
+    
+    // Truncate if too many positions
+    if (adjustedPositions.length > playerCount) {
+      adjustedPositions.splice(playerCount);
+    }
+    
+    onChange({ position_roles: adjustedPositions });
   };
 
   const applySuggestedPosition = (playerIndex: number, position: string) => {
+    // Mark that user has started interacting with positions
+    onPositionInteractionStart?.();
+    
     const newPositions = [...(formData.position_roles || [])];
     newPositions[playerIndex] = position;
     onChange({ position_roles: newPositions });
@@ -206,6 +228,7 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
               value={formData.position_roles || []}
               label="Position Roles"
               onChange={handlePositionChange}
+              onFocus={() => onPositionInteractionStart?.()}
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {(selected as string[]).map((value, index) => {
@@ -313,16 +336,38 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
       )}
 
       {/* Validation Summary */}
-      {formData.player_names?.length > 0 && formData.position_roles?.length > 0 && (
+      {formData.player_names?.length > 0 && (
         <Alert
           severity={
-            formData.player_names.length === formData.position_roles.length ? 'success' : 'warning'
+            (() => {
+              const playerCount = formData.player_names.length;
+              const positions = formData.position_roles || [];
+              const emptyPositions = positions.filter((pos: string) => !pos || pos.trim() === '').length;
+              
+              if (positions.length === playerCount && emptyPositions === 0) {
+                return 'success';
+              } else if (positions.length === playerCount && emptyPositions > 0) {
+                return 'warning';
+              } else {
+                return 'info';
+              }
+            })()
           }
           sx={{ mt: 2 }}
         >
-          {formData.player_names.length === formData.position_roles.length
-            ? `✅ Perfect! You have selected ${formData.player_names.length} players with matching positions.`
-            : `⚠️ Please ensure you have ${formData.player_names.length} positions for your ${formData.player_names.length} players.`}
+          {(() => {
+            const playerCount = formData.player_names.length;
+            const positions = formData.position_roles || [];
+            const emptyPositions = positions.filter((pos: string) => !pos || pos.trim() === '').length;
+            
+            if (positions.length === playerCount && emptyPositions === 0) {
+              return `✅ Perfect! You have selected ${playerCount} players with all positions assigned.`;
+            } else if (positions.length === playerCount && emptyPositions > 0) {
+              return `⚠️ Please assign positions for ${emptyPositions} remaining player${emptyPositions > 1 ? 's' : ''}.`;
+            } else {
+              return `ℹ️ Select players above to assign their positions.`;
+            }
+          })()}
         </Alert>
       )}
     </Box>

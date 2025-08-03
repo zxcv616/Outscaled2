@@ -31,6 +31,7 @@ export const usePredictionForm = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  const [positionInteractionStarted, setPositionInteractionStarted] = useState(false);
 
   // Validation rules for each step
   const validationRules: ValidationRules = useMemo(() => ({
@@ -45,12 +46,31 @@ export const usePredictionForm = () => {
         return null;
       },
       position_roles: (value: string[], formData: FormData) => {
+        // Only validate positions if players are selected
+        if (!formData.player_names || formData.player_names.length === 0) {
+          return null; // No validation needed if no players selected yet
+        }
+        
+        // Don't show validation errors until user has started interacting with positions
+        // or when trying to progress to the next step
+        if (!positionInteractionStarted && !touchedFields.has('position_roles')) {
+          return null;
+        }
+        
         if (!value || value.length === 0) {
-          return 'At least one position is required';
+          return `Please assign positions for your ${formData.player_names.length} player${formData.player_names.length > 1 ? 's' : ''}`;
         }
-        if (formData.player_names && value.length !== formData.player_names.length) {
-          return 'Number of positions must match number of players';
+        
+        if (value.length !== formData.player_names.length) {
+          return `Number of positions (${value.length}) must match number of players (${formData.player_names.length})`;
         }
+        
+        // Check for empty position slots
+        const emptyPositions = value.filter((pos: string) => !pos || pos.trim() === '').length;
+        if (emptyPositions > 0) {
+          return `Please select a position for all players (${emptyPositions} position${emptyPositions > 1 ? 's' : ''} not assigned)`;
+        }
+        
         return null;
       },
     },
@@ -108,7 +128,7 @@ export const usePredictionForm = () => {
         return null;
       },
     },
-  }), []);
+  }), [positionInteractionStarted, touchedFields]);
 
   const validateField = useCallback((fieldName: string, value: any, stepIndex?: number): string | null => {
     if (stepIndex !== undefined) {
@@ -132,6 +152,11 @@ export const usePredictionForm = () => {
     const stepRules = validationRules[stepIndex];
     if (!stepRules) return true;
 
+    // Force position interaction tracking when validating step 0
+    if (stepIndex === 0 && !positionInteractionStarted) {
+      setPositionInteractionStarted(true);
+    }
+
     const stepErrors: FormErrors = {};
     let isValid = true;
 
@@ -150,7 +175,7 @@ export const usePredictionForm = () => {
     }));
 
     return isValid;
-  }, [formData, validationRules]);
+  }, [formData, validationRules, positionInteractionStarted]);
 
   const isStepValid = useCallback((stepIndex: number): boolean => {
     const stepRules = validationRules[stepIndex];
@@ -167,13 +192,18 @@ export const usePredictionForm = () => {
   }, [isStepValid]);
 
   const updateFormData = useCallback((updates: Partial<FormData>) => {
+    // Track when user starts interacting with positions
+    if (updates.position_roles && !positionInteractionStarted) {
+      setPositionInteractionStarted(true);
+    }
+
     setFormData(prev => {
       const newData = { ...prev, ...updates };
       
       // Real-time validation for touched fields
       const newErrors: FormErrors = {};
       Object.keys(updates).forEach(fieldName => {
-        if (touchedFields.has(fieldName)) {
+        if (touchedFields.has(fieldName) || (fieldName === 'position_roles' && positionInteractionStarted)) {
           const error = validateField(fieldName, newData[fieldName as keyof FormData]);
           if (error) {
             newErrors[fieldName] = error;
@@ -198,7 +228,7 @@ export const usePredictionForm = () => {
 
     // Mark fields as touched
     setTouchedFields(prev => new Set([...Array.from(prev), ...Object.keys(updates)]));
-  }, [touchedFields, validateField]);
+  }, [touchedFields, validateField, positionInteractionStarted]);
 
   const submitForm = useCallback((onSubmit: (request: PredictionRequest) => void) => {
     if (!isFormComplete()) {
@@ -239,6 +269,7 @@ export const usePredictionForm = () => {
     });
     setErrors({});
     setTouchedFields(new Set());
+    setPositionInteractionStarted(false);
   }, []);
 
   const getFieldError = useCallback((fieldName: string): string => {
@@ -248,6 +279,12 @@ export const usePredictionForm = () => {
   const hasFieldError = useCallback((fieldName: string): boolean => {
     return Boolean(errors[fieldName]);
   }, [errors]);
+
+  const markPositionInteractionStarted = useCallback(() => {
+    if (!positionInteractionStarted) {
+      setPositionInteractionStarted(true);
+    }
+  }, [positionInteractionStarted]);
 
   return {
     formData,
@@ -262,5 +299,6 @@ export const usePredictionForm = () => {
     getFieldError,
     hasFieldError,
     validateField,
+    markPositionInteractionStarted,
   };
 };

@@ -54,6 +54,7 @@ export const EnhancedPredictionForm: React.FC<EnhancedPredictionFormProps> = ({
     updateFormData,
     validateStep,
     submitForm,
+    markPositionInteractionStarted,
   } = usePredictionForm();
 
   const handleNext = useCallback(() => {
@@ -99,6 +100,7 @@ export const EnhancedPredictionForm: React.FC<EnhancedPredictionFormProps> = ({
                 formData={formData}
                 errors={errors}
                 onChange={updateFormData}
+                onPositionInteractionStart={markPositionInteractionStarted}
               />
             </Box>
           </Slide>

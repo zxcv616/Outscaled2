@@ -13,47 +13,81 @@ class DataProcessor:
         self.data_2024 = None
         self.data_2025 = None
         self.combined_data = None
+        self._player_cache = None  # Cache for fast player searches
+        self._player_details_cache = None  # Cache for player details
         self._load_data()
     
     def _load_data(self):
-        """Load and preprocess the CSV datasets"""
+        """Load and preprocess the CSV datasets - Production version for 2014-2025 data"""
         try:
             import os
+            import glob
             
-            # Try different paths for data files
-            data_paths = [
-                '/app/data/2024_LoL_esports_match_data_from_OraclesElixir.csv',
-                '../data/2024_LoL_esports_match_data_from_OraclesElixir.csv',
-                '../../data/2024_LoL_esports_match_data_from_OraclesElixir.csv'
+            # Look for data files in current working directory or data subdirectory
+            data_dir_paths = [
+                'data/',
+                '../data/',
+                '../../data/',
+                '/app/data/'
             ]
             
-            data_2024_path = None
-            data_2025_path = None
+            data_files = []
+            base_dir = None
             
-            # Find the correct path for 2024 data
-            for path in data_paths:
-                if os.path.exists(path):
-                    data_2024_path = path
-                    data_2025_path = path.replace('2024_', '2025_')
-                    break
+            # Find the data directory
+            for data_dir in data_dir_paths:
+                if os.path.exists(data_dir):
+                    pattern = os.path.join(data_dir, '*_LoL_esports_match_data_from_OraclesElixir.csv')
+                    found_files = glob.glob(pattern)
+                    if found_files:
+                        data_files = found_files
+                        base_dir = data_dir
+                        break
             
-            if data_2024_path is None:
-                logger.warning("Data files not found. Using empty DataFrame for testing.")
+            if not data_files:
+                logger.warning("No LoL esports data files found. Creating empty DataFrame.")
                 self.data_2024 = pd.DataFrame()
                 self.data_2025 = pd.DataFrame()
                 self.combined_data = pd.DataFrame()
                 return
             
-            # Load 2024 data
-            logger.info("Loading 2024 data...")
-            self.data_2024 = pd.read_csv(data_2024_path)
+            logger.info(f"Found {len(data_files)} data files to load from {base_dir}")
             
-            # Load 2025 data
-            logger.info("Loading 2025 data...")
-            self.data_2025 = pd.read_csv(data_2025_path)
+            # Load all data files
+            all_dataframes = []
+            for file_path in sorted(data_files):
+                try:
+                    logger.info(f"Loading {os.path.basename(file_path)}...")
+                    df = pd.read_csv(file_path, low_memory=False)
+                    
+                    # Add year column if not present
+                    filename = os.path.basename(file_path)
+                    file_year = int(filename.split('_')[0])
+                    
+                    if 'year' not in df.columns:
+                        df['year'] = file_year
+                    
+                    all_dataframes.append(df)
+                    logger.info(f"  Loaded {len(df)} records from {file_year}")
+                    
+                except Exception as e:
+                    logger.error(f"Error loading {file_path}: {e}")
+                    continue
             
-            # Combine datasets
-            self.combined_data = pd.concat([self.data_2024, self.data_2025], ignore_index=True)
+            if not all_dataframes:
+                logger.warning("No data files loaded successfully. Creating empty DataFrame.")
+                self.data_2024 = pd.DataFrame()
+                self.data_2025 = pd.DataFrame()
+                self.combined_data = pd.DataFrame()
+                return
+            
+            # Combine all datasets
+            logger.info("Combining all datasets...")
+            self.combined_data = pd.concat(all_dataframes, ignore_index=True, sort=False)
+            
+            # For backward compatibility, separate recent years
+            self.data_2024 = self.combined_data[self.combined_data['year'] == 2024].copy()
+            self.data_2025 = self.combined_data[self.combined_data['year'] == 2025].copy()
             
             # Generate map index within series
             self._generate_map_index()
@@ -61,11 +95,32 @@ class DataProcessor:
             # Clean and preprocess
             self._preprocess_data()
             
-            logger.info(f"Data loaded successfully. Total records: {len(self.combined_data)}")
+            # Build player search cache for fast lookups
+            self._build_player_cache()
+            
+            total_records = len(self.combined_data)
+            years = sorted(self.combined_data['year'].unique())
+            unique_players = len(self.combined_data['playername'].dropna().unique())
+            
+            logger.info(f"Data loaded successfully:")
+            logger.info(f"  Total records: {total_records:,}")
+            logger.info(f"  Years: {years[0]}-{years[-1]}")
+            logger.info(f"  Unique players: {unique_players:,}")
+            logger.info(f"  Memory usage: ~{self.combined_data.memory_usage(deep=True).sum() / 1024 / 1024:.1f} MB")
+            logger.info(f"  Player cache built with {len(self._player_cache) if self._player_cache else 0} entries")
+            
+            # Build player details cache in background (non-blocking)
+            logger.info("Starting background player details cache build...")
+            import threading
+            cache_thread = threading.Thread(target=self._build_player_details_cache)
+            cache_thread.daemon = True
+            cache_thread.start()
             
         except Exception as e:
             logger.error(f"Error loading data: {e}")
-            # For testing, create empty DataFrame
+            import traceback
+            traceback.print_exc()
+            # Fallback to empty DataFrame
             self.data_2024 = pd.DataFrame()
             self.data_2025 = pd.DataFrame()
             self.combined_data = pd.DataFrame()
@@ -101,6 +156,55 @@ class DataProcessor:
         self.combined_data['position'] = self.combined_data['position'].str.lower()
         
         logger.info("Data preprocessing completed")
+    
+    def _build_player_cache(self):
+        """Build a fast lookup cache for player search"""
+        if self.combined_data is None or self.combined_data.empty:
+            self._player_cache = []
+            return
+        
+        # Get unique players and sort them for fast searching
+        unique_players = self.combined_data['playername'].dropna().unique()
+        cleaned_players = [player.strip() for player in unique_players if player.strip()]
+        
+        # Sort players alphabetically for better search performance
+        self._player_cache = sorted(cleaned_players)
+        logger.info(f"Player cache built with {len(self._player_cache)} players")
+    
+    def _build_player_details_cache(self):
+        """Build a fast lookup cache for player details"""
+        if self.combined_data is None or self.combined_data.empty:
+            self._player_details_cache = {}
+            return
+        
+        logger.info("Building player details cache...")
+        temp_cache = {}
+        
+        # Group by player to get their details efficiently
+        player_list = list(self._player_cache or [])  # Create a copy to avoid iteration issues
+        for player in player_list:
+            try:
+                player_data = self.combined_data[self.combined_data['playername'] == player]
+                if not player_data.empty:
+                    # Get most common position
+                    position_counts = player_data['position'].value_counts()
+                    most_common_position = position_counts.index[0] if not position_counts.empty else None
+                    
+                    # Get most recent team
+                    recent_team = player_data.sort_values('date', ascending=False).iloc[0]['teamname'] if 'date' in player_data.columns else None
+                    
+                    temp_cache[player] = {
+                        'position': most_common_position,
+                        'team': recent_team,
+                        'games_played': len(player_data)
+                    }
+            except Exception as e:
+                logger.warning(f"Error processing player {player}: {e}")
+                continue
+        
+        # Atomically update the cache
+        self._player_details_cache = temp_cache
+        logger.info(f"Player details cache built with {len(self._player_details_cache)} players")
     
     def filter_player_data(self, player_names: List[str], map_range: List[int], 
                           team: str = None, opponent: str = None, tournament: str = None) -> pd.DataFrame:
@@ -184,7 +288,7 @@ class DataProcessor:
             # Filter data for this tier
             tier_data = self._filter_by_tier_criteria(player_names, tier['criteria'], team, opponent)
             
-            if len(tier_data) >= 5:  # Minimum viable sample size
+            if len(tier_data) >= 5:  # Minimum viable sample size for production
                 logger.info(f"Tier {tier_idx + 1} successful: {len(tier_data)} maps")
                 
                 # Calculate sample sources breakdown
@@ -318,18 +422,24 @@ class DataProcessor:
         return sources
     
     def aggregate_stats(self, player_data: pd.DataFrame, prop_type: str) -> Dict[str, float]:
-        """Aggregate statistics across the map range"""
+        """Aggregate statistics across the map range - Updated for production data"""
         if prop_type not in ['kills', 'assists']:
             raise ValueError("prop_type must be 'kills' or 'assists'")
         
         # Debug logging
         logger.info(f"Aggregating stats for {prop_type} across {len(player_data)} maps")
-        logger.info(f"Sample {prop_type} values: {player_data[prop_type].head(10).tolist()}")
-        logger.info(f"Position distribution: {player_data['position'].value_counts().to_dict()}")
+        if not player_data.empty and prop_type in player_data.columns:
+            logger.info(f"Sample {prop_type} values: {player_data[prop_type].head(10).tolist()}")
+        if not player_data.empty and 'position' in player_data.columns:
+            logger.info(f"Position distribution: {player_data['position'].value_counts().to_dict()}")
         
-        # Group by player and aggregate
-        agg_stats = player_data.groupby('playername').agg({
-            prop_type: ['mean', 'std', 'count'],
+        # Build aggregation dictionary with available columns
+        agg_dict = {
+            prop_type: ['mean', 'std', 'count']
+        }
+        
+        # Add optional columns if they exist
+        optional_columns = {
             'deaths': 'mean',
             'damagetochampions': 'mean',
             'visionscore': 'mean',
@@ -348,18 +458,41 @@ class DataProcessor:
             'csat20': 'mean',
             'killsat20': 'mean',
             'assistsat20': 'mean',
-            'deathsat20': 'mean'
-        }).round(2)
+            'deathsat20': 'mean',
+            # Additional production columns
+            'doublekills': 'mean',
+            'triplekills': 'mean',
+            'quadrakills': 'mean',
+            'pentakills': 'mean',
+            'dpm': 'mean',
+            'earned gpm': 'mean',
+            'vspm': 'mean',
+            'cspm': 'mean'
+        }
         
-        # Flatten column names
-        agg_stats.columns = ['_'.join(col).strip() for col in agg_stats.columns.values]
+        for col, agg_func in optional_columns.items():
+            if col in player_data.columns:
+                agg_dict[col] = agg_func
         
-        # Debug logging for aggregated results
-        for player_name in agg_stats.index:
-            player_stats = agg_stats.loc[player_name]
-            logger.info(f"Player {player_name} - {prop_type}_mean: {player_stats.get(f'{prop_type}_mean', 0)}")
-        
-        return agg_stats.to_dict('index')
+        # Group by player and aggregate
+        try:
+            agg_stats = player_data.groupby('playername').agg(agg_dict).round(2)
+            
+            # Flatten column names
+            agg_stats.columns = ['_'.join(str(col)).strip() for col in agg_stats.columns.values]
+            
+            # Debug logging for aggregated results
+            for player_name in agg_stats.index:
+                player_stats = agg_stats.loc[player_name]
+                avg_value = player_stats.get(f'{prop_type}_mean', 0)
+                logger.info(f"Player {player_name} - {prop_type}_mean: {avg_value}")
+            
+            return agg_stats.to_dict('index')
+            
+        except Exception as e:
+            logger.error(f"Error in aggregation: {e}")
+            logger.error(f"Available columns: {list(player_data.columns)}")
+            return {}
     
     def engineer_features(self, player_data: pd.DataFrame, prop_type: str) -> Dict[str, float]:
         """Engineer features as specified in the MVP"""
@@ -570,6 +703,29 @@ class DataProcessor:
             logger.error(f"Error getting available tournaments: {e}")
             return []
     
+    def get_available_opponents(self) -> List[str]:
+        """Get list of all available opponent team names"""
+        if self.combined_data is None:
+            return []
+        try:
+            # Get opponents from both teamname and opponent columns
+            all_teams = set()
+            
+            # Add teams from teamname column
+            if 'teamname' in self.combined_data.columns:
+                team_names = self.combined_data['teamname'].dropna().astype(str)
+                all_teams.update(team_names.unique())
+            
+            # Add teams from opponent column
+            if 'opponent' in self.combined_data.columns:
+                opponent_names = self.combined_data['opponent'].dropna().astype(str)
+                all_teams.update(opponent_names.unique())
+            
+            return sorted(list(all_teams))
+        except Exception as e:
+            logger.error(f"Error getting available opponents: {e}")
+            return []
+    
     def check_data_availability(self, player_names: List[str], tournament: str = None, 
                               map_range: List[int] = None) -> Dict[str, any]:
         """
@@ -684,8 +840,12 @@ class DataProcessor:
         tournaments = player_data['league'].unique() if 'league' in player_data.columns else [request.tournament]
         tournament_str = ", ".join(tournaments) if len(tournaments) <= 2 else f"{len(tournaments)} tournaments"
         
-        # Get opponent information
-        opponents = player_data['opponent'].unique() if 'opponent' in player_data.columns else [request.opponent]
+        # Get opponent information  
+        if 'opponent' in player_data.columns:
+            opponents = player_data['opponent'].dropna().unique()
+            opponents = [str(opp) for opp in opponents if opp is not None]
+        else:
+            opponents = [request.opponent] if request.opponent else ['Unknown']
         opponent_str = ", ".join(opponents) if len(opponents) <= 2 else f"{len(opponents)} opponents"
         
         # Get date range
@@ -732,11 +892,22 @@ class DataProcessor:
 
     def get_all_players(self) -> List[str]:
         """Get list of all available players in the dataset"""
-        # Combine data from both years
-        combined_data = pd.concat([self.data_2024, self.data_2025], ignore_index=True)
+        # Debug logging
+        logger.info(f"DEBUG: get_all_players called")
+        logger.info(f"DEBUG: combined_data is None: {self.combined_data is None}")
+        if self.combined_data is not None:
+            logger.info(f"DEBUG: combined_data shape: {self.combined_data.shape}")
+            logger.info(f"DEBUG: combined_data empty: {self.combined_data.empty}")
+            if not self.combined_data.empty:
+                logger.info(f"DEBUG: First 5 players: {self.combined_data['playername'].dropna().head().tolist()}")
+        
+        # Use the combined data from all years (2014-2025)
+        if self.combined_data is None or self.combined_data.empty:
+            logger.warning("No combined data available - returning empty list")
+            return []
         
         # Get unique player names
-        all_players = combined_data['playername'].dropna().unique().tolist()
+        all_players = self.combined_data['playername'].dropna().unique().tolist()
         
         # Filter out empty strings and clean player names
         cleaned_players = [player.strip() for player in all_players if player.strip()]
@@ -744,10 +915,22 @@ class DataProcessor:
         logger.info(f"Found {len(cleaned_players)} unique players in dataset")
         return cleaned_players
     
+    def get_player_details(self) -> Dict[str, Dict[str, Any]]:
+        """Get player details from cache for fast response"""
+        if self._player_details_cache is None:
+            logger.warning("Player details cache not available")
+            return {}
+        
+        return self._player_details_cache
+    
     def get_player_data(self, player_name: str) -> pd.DataFrame:
         """Get all historical data for a specific player"""
-        # Combine data from both years
-        combined_data = pd.concat([self.data_2024, self.data_2025], ignore_index=True)
+        # Use the combined data from all years (2014-2025)
+        if self.combined_data is None or self.combined_data.empty:
+            logger.warning("No combined data available")
+            return pd.DataFrame()
+        
+        combined_data = self.combined_data
         
         # Filter for the specific player
         player_data = combined_data[combined_data['playername'] == player_name].copy()

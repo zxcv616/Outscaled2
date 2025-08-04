@@ -12,18 +12,19 @@ import {
   Autocomplete,
   Alert,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 
 import { 
   Person, 
   TrendingUp, 
   SportsEsports, 
-  CalendarToday,
   Group,
   EmojiEvents,
 } from '@mui/icons-material';
 import { PredictionRequest } from '../types/api';
 import { predictionApi } from '../services/api';
+import { usePlayerSearch } from '../hooks/usePlayerSearch';
 
 interface PredictionFormProps {
   onSubmit: (request: PredictionRequest) => void;
@@ -42,36 +43,56 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
     opponent: '',
     tournament: '',
     team: '',
-    match_date: new Date().toISOString().slice(0, 16),
     position_roles: [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
   const [availableTeams, setAvailableTeams] = useState<string[]>([]);
   const [availableTournaments, setAvailableTournaments] = useState<string[]>([]);
+  const [availableOpponents, setAvailableOpponents] = useState<string[]>([]);
+  const [playerDetails, setPlayerDetails] = useState<Record<string, { position: string | null; team: string | null; games_played: number }>>({});
   const [loadingData, setLoadingData] = useState(true);
 
-  // Load available players, teams, and tournaments on component mount
+  // Use optimized player search instead of loading all players
+  const { searchQuery, setSearchQuery, searchResults: availablePlayers, loading: searchLoading, totalMatches } = usePlayerSearch();
+
+  // Load available teams, tournaments, opponents, and player details on component mount
+  // Note: Players are loaded via usePlayerSearch hook for better performance
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoadingData(true);
-        const [playersResponse, teamsResponse, tournamentsResponse] = await Promise.all([
-          predictionApi.getPlayers(),
+        
+        // Check if backend is ready first
+        const healthResponse = await predictionApi.getHealth();
+        if (!healthResponse || healthResponse.status !== 'healthy') {
+          console.log('Backend not ready, will retry...');
+          setTimeout(loadData, 2000); // Retry after 2 seconds
+          return;
+        }
+        
+        const [teamsResponse, tournamentsResponse, opponentsResponse, playerDetailsResponse] = await Promise.all([
           predictionApi.getTeams(),
-          predictionApi.getTournaments()
+          predictionApi.getTournaments(),
+          predictionApi.getOpponents(),
+          predictionApi.getPlayerDetails()
         ]);
-        setAvailablePlayers(playersResponse.players);
-        setAvailableTeams(teamsResponse.teams);
-        setAvailableTournaments(tournamentsResponse.tournaments);
+        
+        setAvailableTeams(teamsResponse.teams || []);
+        setAvailableTournaments(tournamentsResponse.tournaments || []);
+        setAvailableOpponents(opponentsResponse.opponents || []);
+        
+        // Use real player details from CSV data
+        setPlayerDetails(playerDetailsResponse.player_details || {});
         
         // Set default tournament to first available one if none selected
-        if (!formData.tournament && tournamentsResponse.tournaments.length > 0) {
+        if (!formData.tournament && tournamentsResponse.tournaments && tournamentsResponse.tournaments.length > 0) {
           setFormData(prev => ({ ...prev, tournament: tournamentsResponse.tournaments[0] }));
         }
       } catch (error) {
         console.error('Failed to load autocomplete data:', error);
+        // Retry after error
+        setTimeout(loadData, 3000);
       } finally {
         setLoadingData(false);
       }
@@ -79,6 +100,34 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
 
     loadData();
   }, []);
+
+  // Auto-assign position and team when players are selected
+  useEffect(() => {
+    if (formData.player_names?.length) {
+      // Use real player details from CSV data
+      const positions = new Set<string>();
+      const teams = new Set<string>();
+      
+      formData.player_names.forEach(playerName => {
+        const playerInfo = playerDetails && playerDetails[playerName];
+        if (playerInfo) {
+          if (playerInfo.position) positions.add(playerInfo.position);
+          if (playerInfo.team) teams.add(playerInfo.team);
+        }
+      });
+      
+      // Auto-set position if not already set (convert to uppercase)
+      if (positions.size > 0 && !formData.position_roles?.length) {
+        const upperPositions = Array.from(positions).map(p => p.toUpperCase());
+        setFormData(prev => ({ ...prev, position_roles: upperPositions }));
+      }
+      
+      // Auto-set team if not already set and all players from same team
+      if (teams.size === 1 && !formData.team) {
+        setFormData(prev => ({ ...prev, team: Array.from(teams)[0] }));
+      }
+    }
+  }, [formData.player_names, playerDetails]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -118,7 +167,6 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
         opponent: formData.opponent!,
         tournament: formData.tournament!,
         team: formData.team!,
-        match_date: formData.match_date!,
         position_roles: formData.position_roles,
       });
     }
@@ -168,39 +216,72 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
               onChange={(_, newValue) => 
                 setFormData(prev => ({ ...prev, player_names: newValue }))
               }
-              loading={loadingData}
+              loading={searchLoading}
+              onInputChange={(_, value) => {
+                setSearchQuery(value);
+              }}
+              filterOptions={(options) => options} // No client-side filtering, server handles it
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="Player Names"
                   error={!!errors.player_names}
-                  helperText={errors.player_names}
-                  placeholder="Type to search players..."
+                  helperText={
+                    errors.player_names || 
+                    (searchLoading ? 'Searching players...' : 
+                     totalMatches > 0 ? `${totalMatches} matches found` : 
+                     searchQuery.length >= 2 ? 'No matches found' :
+                     'Type at least 2 characters to search players')
+                  }
+                  placeholder="Type to search players... (e.g., 'faker')"
                   fullWidth
                   InputProps={{
                     ...params.InputProps,
                     endAdornment: (
                       <>
-                        {loadingData ? <Typography variant="caption">Loading...</Typography> : null}
+                        {searchLoading && <CircularProgress size={20} />}
                         {params.InputProps.endAdornment}
                       </>
                     ),
                   }}
                 />
               )}
+              renderOption={(props, option) => {
+                const details = playerDetails[option];
+                const { key, ...otherProps } = props;
+                return (
+                  <Box component="li" key={key} {...otherProps}>
+                    <Box>
+                      <Typography variant="body1">{option}</Typography>
+                      {details && (
+                        <Typography variant="caption" color="text.secondary">
+                          {details.position ? `${details.position} • ` : ''}
+                          {details.team ? `${details.team} • ` : ''}
+                          {details.games_played} games
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                );
+              }}
               renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    variant="outlined"
-                    label={option}
-                    {...getTagProps({ index })}
-                    sx={{ 
-                      background: 'rgba(63, 81, 181, 0.1)',
-                      borderColor: 'primary.main',
-                      color: 'primary.main',
-                    }}
-                  />
-                ))
+                value.map((option, index) => {
+                  const details = playerDetails[option];
+                  const { key, ...chipProps } = getTagProps({ index });
+                  return (
+                    <Chip
+                      key={key}
+                      variant="outlined"
+                      label={`${option}${details?.position ? ` (${details.position})` : ''}`}
+                      {...chipProps}
+                      sx={{ 
+                        background: 'rgba(63, 81, 181, 0.1)',
+                        borderColor: 'primary.main',
+                        color: 'primary.main',
+                      }}
+                    />
+                  );
+                })
               }
             />
           </Box>
@@ -286,25 +367,6 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
             </Box>
           </Box>
 
-          {/* Match Date */}
-          <Box sx={{ width: '100%' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <CalendarToday sx={{ mr: 1, color: 'primary.main' }} />
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Match Date
-              </Typography>
-            </Box>
-            <TextField
-              fullWidth
-              label="Match Date"
-              type="datetime-local"
-              value={formData.match_date}
-              onChange={(e) => 
-                setFormData(prev => ({ ...prev, match_date: e.target.value }))
-              }
-              InputLabelProps={{ shrink: true }}
-            />
-          </Box>
 
           {/* Team and Opponent */}
           <Box sx={{ width: '100%' }}>
@@ -351,7 +413,7 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
               </Typography>
             </Box>
             <Autocomplete
-              options={availableTeams}
+              options={availableOpponents}
               value={formData.opponent}
               onChange={(_, newValue) => 
                 setFormData(prev => ({ ...prev, opponent: newValue || '' }))
@@ -362,8 +424,8 @@ export const PredictionForm: React.FC<PredictionFormProps> = ({ onSubmit, loadin
                   {...params}
                   label="Opponent"
                   error={!!errors.opponent}
-                  helperText={errors.opponent}
-                  placeholder="Type to search teams..."
+                  helperText={errors.opponent || "Select opponent team"}
+                  placeholder="Type to search opponents..."
                   fullWidth
                   InputProps={{
                     ...params.InputProps,

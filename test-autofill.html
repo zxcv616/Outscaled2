@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto-Fill Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 50px; }
+        .result { padding: 10px; margin: 10px 0; background: #f5f5f5; border-radius: 5px; }
+        .error { background: #ffe6e6; border-left: 4px solid #ff0000; }
+        .success { background: #e6ffe6; border-left: 4px solid #00ff00; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Auto-Fill Test</h1>
+    
+    <h2>Step 1: Test Backend API</h2>
+    <button onclick="testPlayerDetails()">Test Player Details API</button>
+    <div id="apiResult"></div>
+    
+    <h2>Step 2: Test Auto-Fill Logic</h2>
+    <input type="text" id="playerInput" placeholder="Type: Faker" />
+    <button onclick="testAutoFill()">Test Auto-Fill</button>
+    <div id="autofillResult"></div>
+    
+    <script>
+        async function testPlayerDetails() {
+            try {
+                const response = await fetch('http://localhost:8003/player-details');
+                const data = await response.json();
+                
+                document.getElementById('apiResult').innerHTML = `
+                    <div class="result success">
+                        <h3>✅ API Working</h3>
+                        <p>Found ${Object.keys(data.player_details || {}).length} players</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('apiResult').innerHTML = `
+                    <div class="result error">
+                        <h3>❌ API Failed</h3>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function testAutoFill() {
+            const playerName = document.getElementById('playerInput').value;
+            
+            // Test the hardcoded logic from frontend
+            const knownPlayers = {
+                'Faker': { position: 'MID', team: 'T1' },
+                'Caps': { position: 'MID', team: 'G2 Esports' },
+                'Bjergsen': { position: 'MID', team: 'Team Liquid' },
+                'Doublelift': { position: 'BOT', team: 'Team Liquid' },
+                'sOAZ': { position: 'TOP', team: 'Fnatic' }
+            };
+            
+            const playerInfo = knownPlayers[playerName];
+            
+            if (playerInfo) {
+                document.getElementById('autofillResult').innerHTML = `
+                    <div class="result success">
+                        <h3>✅ Auto-Fill Working</h3>
+                        <p><strong>Player:</strong> ${playerName}</p>
+                        <p><strong>Position:</strong> ${playerInfo.position}</p>
+                        <p><strong>Team:</strong> ${playerInfo.team}</p>
+                    </div>
+                `;
+            } else {
+                document.getElementById('autofillResult').innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Player Not Found</h3>
+                        <p>Try: Faker, Caps, Bjergsen, Doublelift, or sOAZ</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = function() {
+            testPlayerDetails();
+        };
+    </script>
+</body>
+</html>

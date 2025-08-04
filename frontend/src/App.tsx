@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { Container, Box, Alert, Typography, Paper } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Header } from './components/Header';
-import { PredictionForm } from './components/PredictionForm';
+import { OptimizedPredictionForm } from './components/OptimizedPredictionForm';
 import { PredictionResult } from './components/PredictionResult';
 import { predictionApi } from './services/api';
 import { PredictionRequest, PredictionResponse } from './types/api';
+import { queryClient } from './lib/queryClient';
 
 const theme = createTheme({
   palette: {
@@ -103,28 +106,29 @@ function App() {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box 
-        sx={{ 
-          minHeight: '100vh',
-          backgroundImage: 'url(/background.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-          position: 'relative',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            zIndex: 1,
-          },
-        }}
-      >
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box 
+          sx={{ 
+            minHeight: '100vh',
+            backgroundImage: 'url(/background.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed',
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              zIndex: 1,
+            },
+          }}
+        >
         <Box sx={{ position: 'relative', zIndex: 2 }}>
           <Header />
           
@@ -183,7 +187,7 @@ function App() {
                 border: '1px solid rgba(255, 255, 255, 0.1)',
               }}
             >
-              <PredictionForm onSubmit={handlePrediction} loading={loading} />
+              <OptimizedPredictionForm onSubmit={handlePrediction} loading={loading} />
             </Paper>
             
             <PredictionResult 
@@ -222,7 +226,9 @@ function App() {
           </Container>
         </Box>
       </Box>
-    </ThemeProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

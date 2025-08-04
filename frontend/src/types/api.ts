@@ -6,7 +6,6 @@ export interface PredictionRequest {
   opponent: string;
   tournament: string;
   team: string;
-  match_date: string;
   position_roles: string[];
   strict_mode?: boolean;
 }

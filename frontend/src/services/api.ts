@@ -24,9 +24,9 @@ export const predictionApi = {
     }
   },
 
-  async getHealth(): Promise<{ status: string }> {
+  async getHealth(): Promise<{ status: string; data_loaded?: boolean }> {
     try {
-      const response = await api.get<{ status: string }>('/health');
+      const response = await api.get<{ status: string; data_loaded?: boolean }>('/health');
       return response.data;
     } catch (error) {
       throw new Error('Health check failed');
@@ -39,6 +39,17 @@ export const predictionApi = {
       return response.data;
     } catch (error) {
       throw new Error('Failed to get players');
+    }
+  },
+
+  async searchPlayers(query: string, limit: number = 50): Promise<{ players: string[]; total_matches: number }> {
+    try {
+      const response = await api.get<{ players: string[]; total_matches: number }>('/players/search', {
+        params: { q: query, limit }
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error('Failed to search players');
     }
   },
 
@@ -57,6 +68,24 @@ export const predictionApi = {
       return response.data;
     } catch (error) {
       throw new Error('Failed to get tournaments');
+    }
+  },
+
+  async getPlayerDetails(): Promise<{ player_details: Record<string, { position: string | null; team: string | null; games_played: number }> }> {
+    try {
+      const response = await api.get<{ player_details: Record<string, { position: string | null; team: string | null; games_played: number }> }>('/player-details');
+      return response.data;
+    } catch (error) {
+      throw new Error('Failed to get player details');
+    }
+  },
+
+  async getOpponents(): Promise<{ opponents: string[] }> {
+    try {
+      const response = await api.get<{ opponents: string[] }>('/opponents');
+      return response.data;
+    } catch (error) {
+      throw new Error('Failed to get opponents');
     }
   },
 }; 

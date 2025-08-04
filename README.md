@@ -1,20 +1,78 @@
-# Outscaled2 - League of Legends Prediction Platform
+# Outscaled2 - Enterprise League of Legends Prediction Platform
 
-A full-stack web application for predicting League of Legends player performance using machine learning.
+A production-ready, full-stack web application for predicting League of Legends player performance using advanced machine learning with comprehensive features.
 
-## Testing
+## ✨ Key Features
+
+### Machine Learning & Predictions
+- **Advanced ML Models**: Random Forest + XGBoost with calibrated probabilities
+- **Confidence Intervals**: Statistical confidence calculations with gap-based adjustments
+- **Prediction Curves**: Dynamic visualization of prediction probabilities across prop ranges
+- **Position-Specific Analysis**: Tailored predictions based on player roles
+- **Tiered Data System**: Weights data by relevance (Tier 1-5) for better accuracy
+
+### Enhanced User Experience
+- **Multi-step Forms**: Intuitive step-by-step prediction input with Enhanced UI
+- **Smart Autocomplete**: Advanced autocomplete for players, teams, and tournaments
+- **Responsive Design**: Modern Material-UI interface with dark theme
+- **Real-time Validation**: Live form validation and error handling
+- **Enhanced Components**: Professional step-based form navigation
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Docker and Docker Compose
+- Git
+- Node.js 18+ (for local development)
+- Python 3.11+ (for local development)
+
+### Setup
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd Outscaled2
+   ```
+
+2. **Start the application**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+
+## 📱 Frontend Features
+
+### Enhanced Multi-Step Form
+The application features a sophisticated multi-step form interface:
+
+1. **Match Details Step**: Date, tournament, opponent selection
+2. **Player Selection Step**: Advanced autocomplete with team inference
+3. **Prop Configuration Step**: Prop type, value, and map range selection
+
+### Advanced Components
+- **EnhancedPredictionForm**: Multi-step form with validation
+- **EnhancedAutocomplete**: Smart autocomplete with debouncing
+- **FormStepper**: Professional step navigation
+- **Responsive Design**: Mobile-first approach with Material-UI
+
+## 🧪 Testing
 
 ### Backend Tests
 ```bash
 cd backend
 python run_confidence_tests.py quick    # Quick confidence test
 python run_confidence_tests.py          # Full test suite
+python run_tests.py                     # Run all tests
 ```
 
 ### Frontend Tests
 ```bash
 cd frontend
 npm test
+npm run test:coverage                   # Coverage report
 ```
 
 ## Data Requirements

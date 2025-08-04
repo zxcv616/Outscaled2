@@ -35,8 +35,8 @@ interface PropConfigurationStepProps {
 }
 
 const PROP_TYPES = [
-  { value: 'kills', label: 'Kills', icon: '⚔️', description: 'Player eliminations' },
-  { value: 'assists', label: 'Assists', icon: '🤝', description: 'Team fight contributions' },
+  { value: 'kills', label: 'Kills', icon: 'K', description: 'Player eliminations' },
+  { value: 'assists', label: 'Assists', icon: 'A', description: 'Team fight contributions' },
 ];
 
 const MAP_DESCRIPTIONS = {
@@ -291,7 +291,7 @@ export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
           {suggestedValues.length > 0 && (
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                💡 Popular {currentPropType?.label?.toLowerCase()} lines:
+                Popular {currentPropType?.label?.toLowerCase()} lines:
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {suggestedValues.map((value) => (
@@ -341,7 +341,7 @@ export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
           {/* Important Alert about Combined Stats */}
           <Alert severity="info" sx={{ mb: 3, bgcolor: 'rgba(33, 150, 243, 0.1)', border: '1px solid rgba(33, 150, 243, 0.3)' }}>
             <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-              📊 COMBINED Statistics Calculation
+              COMBINED Statistics Calculation
             </Typography>
             <Typography variant="body2">
               Map ranges calculate <strong>TOTAL stats across ALL selected maps</strong>. 
@@ -374,7 +374,7 @@ export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
 
           <Box sx={{ mb: 3 }}>
             <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: 'primary.main' }}>
-              📈 This prediction covers TOTAL {currentPropType?.label?.toLowerCase() || 'stats'} across Maps {mapRange[0]} to {mapRange[1]}
+              This prediction covers TOTAL {currentPropType?.label?.toLowerCase() || 'stats'} across Maps {mapRange[0]} to {mapRange[1]}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Example: If you get 3 {currentPropType?.label?.toLowerCase() || 'kills'} in Map {mapRange[0]} and 2 {currentPropType?.label?.toLowerCase() || 'kills'} in Map {mapRange[1]}, your combined total is 5 {currentPropType?.label?.toLowerCase() || 'kills'}.
@@ -383,7 +383,7 @@ export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
 
           <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.02)', p: 2, borderRadius: 2, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <Typography variant="body2" sx={{ fontWeight: 500, mb: 2, color: 'secondary.main' }}>
-              🎯 Maps Included in Combined Calculation:
+              Maps Included in Combined Calculation:
             </Typography>
             <Stack spacing={1}>
               {Array.from({ length: mapRange[1] - mapRange[0] + 1 }, (_, i) => {
@@ -406,7 +406,7 @@ export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
             </Stack>
             <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(76, 175, 80, 0.1)', borderRadius: 1, border: '1px solid rgba(76, 175, 80, 0.3)' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, color: 'success.main' }}>
-                ✅ Total Combined Range: {mapRange[1] - mapRange[0] + 1} map{mapRange[1] - mapRange[0] !== 0 ? 's' : ''}
+                Total Combined Range: {mapRange[1] - mapRange[0] + 1} map{mapRange[1] - mapRange[0] !== 0 ? 's' : ''}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Your {currentPropType?.label?.toLowerCase() || 'stats'} from ALL these maps will be added together for the final prediction.
@@ -543,7 +543,7 @@ export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
       {/* Educational Note */}
       <Alert severity="info" icon={<Info />} sx={{ mt: 3, mb: 2, bgcolor: 'rgba(33, 150, 243, 0.1)', border: '1px solid rgba(33, 150, 243, 0.3)' }}>
         <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-          🤓 Betting Logic Reminder
+          Betting Logic Reminder
         </Typography>
         <Typography variant="body2">
           This system predicts <strong>COMBINED/TOTAL statistics</strong> across your selected map range. 
@@ -558,7 +558,7 @@ export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
         </Alert>
       ) : (
         <Alert severity="success" sx={{ mt: 2 }}>
-          ✅ Your prediction is ready! The AI will predict whether you'll go OVER or UNDER {formData.prop_value} total {currentPropType?.label?.toLowerCase() || 'stats'} across Maps {mapRange[0]}-{mapRange[1]}.
+          Your prediction is ready! The AI will predict whether you'll go OVER or UNDER {formData.prop_value} total {currentPropType?.label?.toLowerCase() || 'stats'} across Maps {mapRange[0]}-{mapRange[1]}.
         </Alert>
       )}
     </Box>

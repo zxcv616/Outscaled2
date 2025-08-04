@@ -31,11 +31,11 @@ interface PlayerSelectionStepProps {
 }
 
 const POSITIONS = [
-  { value: 'TOP', label: 'Top Lane', color: '#FF6B6B', icon: '⚔️' },
-  { value: 'JNG', label: 'Jungle', color: '#4ECDC4', icon: '🌲' },
-  { value: 'MID', label: 'Mid Lane', color: '#45B7D1', icon: '⚡' },
-  { value: 'BOT', label: 'Bot Lane', color: '#FFA07A', icon: '🏹' },
-  { value: 'SUP', label: 'Support', color: '#98D8C8', icon: '🛡️' },
+  { value: 'TOP', label: 'Top Lane', color: '#FF6B6B', icon: 'T' },
+  { value: 'JNG', label: 'Jungle', color: '#4ECDC4', icon: 'J' },
+  { value: 'MID', label: 'Mid Lane', color: '#45B7D1', icon: 'M' },
+  { value: 'BOT', label: 'Bot Lane', color: '#FFA07A', icon: 'B' },
+  { value: 'SUP', label: 'Support', color: '#98D8C8', icon: 'S' },
 ];
 
 export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
@@ -234,7 +234,7 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
           {Object.keys(playerSuggestions).length > 0 && (
             <Box sx={{ mt: 3 }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                💡 Position Suggestions:
+                Suggested Positions:
               </Typography>
               <Stack spacing={1}>
                 {formData.player_names?.map((player: string, index: number) => {
@@ -323,14 +323,13 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
             // Only show validation messages if:
             // 1. There are no empty positions (success case), OR
             // 2. User has actually triggered validation errors through interaction
-            const shouldShowValidation = emptyPositions === 0 || Boolean(errors.position_roles);
             
             if (positions.length === playerCount && emptyPositions === 0) {
-              return `✅ Perfect! You have selected ${playerCount} players with all positions assigned.`;
+              return `Perfect! You have selected ${playerCount} players with all positions assigned.`;
             } else if (positions.length === playerCount && emptyPositions > 0 && Boolean(errors.position_roles)) {
-              return `⚠️ Please assign positions for ${emptyPositions} remaining player${emptyPositions > 1 ? 's' : ''}.`;
+              return `Please assign positions for ${emptyPositions} remaining player${emptyPositions > 1 ? 's' : ''}.`;
             } else {
-              return `ℹ️ Select players above to assign their positions.`;
+              return `Select players above to assign their positions.`;
             }
           })()}
         </Alert>

@@ -103,17 +103,17 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
   const formatTournamentOption = (tournament: string) => {
     // Add visual indicators for different tournament types
     const tournamentLower = tournament.toLowerCase();
-    let icon = '🏆';
+    let icon = 'T';
     let category = 'Tournament';
     
     if (tournamentLower.includes('world') || tournamentLower.includes('championship')) {
-      icon = '🌍';
+      icon = 'W';
       category = 'World Championship';
     } else if (tournamentLower.includes('spring') || tournamentLower.includes('summer')) {
-      icon = '🌟';
+      icon = 'R';
       category = 'Regional League';
     } else if (tournamentLower.includes('msi')) {
-      icon = '🎯';
+      icon = 'I';
       category = 'International';
     }
 
@@ -246,7 +246,7 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
         {teamSuggestions.length > 0 && !formData.team && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              💡 Suggested teams based on selected players:
+              Suggested teams based on selected players:
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {teamSuggestions.map((team) => (
@@ -388,7 +388,7 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
         </Alert>
       ) : (
         <Alert severity="success" sx={{ mt: 2 }}>
-          ✅ Match details are complete! You can now proceed to configure your prediction.
+          Match details are complete! You can now proceed to configure your prediction.
         </Alert>
       )}
     </Box>

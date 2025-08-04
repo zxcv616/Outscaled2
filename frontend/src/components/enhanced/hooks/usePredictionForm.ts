@@ -186,7 +186,7 @@ export const usePredictionForm = () => {
     }));
 
     return isValid;
-  }, [formData, validationRules, touchedFields, setIsExplicitValidation]);
+  }, [formData, validationRules, setIsExplicitValidation]);
 
   const isStepValid = useCallback((stepIndex: number): boolean => {
     console.log('🔍 STEP VALIDITY: Checking validity for step:', stepIndex);

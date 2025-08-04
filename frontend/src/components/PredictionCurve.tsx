@@ -24,8 +24,9 @@ const PredictionCurve: React.FC<PredictionCurveProps> = ({
   confidence
 }) => {
   const isOver = prediction === 'OVER';
+  // Fixed: Ensure no NaN calculations with proper validation
   const gap = Math.abs(expectedStat - propValue);
-  const gapPercentage = (gap / propValue) * 100;
+  const gapPercentage = propValue !== 0 ? (gap / propValue) * 100 : 0;
 
   // Calculate prediction strength based on confidence
   const getPredictionStrength = (confidence: number) => {
@@ -71,7 +72,7 @@ const PredictionCurve: React.FC<PredictionCurveProps> = ({
             <Box sx={{
               position: 'absolute',
               top: '50%',
-              left: `${50 + (expectedStat - propValue) * 20}%`,
+              left: `${Math.max(0, Math.min(100, 50 + (expectedStat - propValue) * 20))}%`,
               transform: 'translate(-50%, -50%)',
               width: 12,
               height: 12,
@@ -86,8 +87,8 @@ const PredictionCurve: React.FC<PredictionCurveProps> = ({
             <Box sx={{
               position: 'absolute',
               top: '50%',
-              left: `${50 + (confidenceInterval[0] - propValue) * 20}%`,
-              right: `${50 - (confidenceInterval[1] - propValue) * 20}%`,
+              left: `${Math.max(0, Math.min(100, 50 + (confidenceInterval[0] - propValue) * 20))}%`,
+              right: `${Math.max(0, Math.min(100, 50 - (confidenceInterval[1] - propValue) * 20))}%`,
               height: 8,
               background: 'rgba(63, 81, 181, 0.3)',
               borderRadius: 4,
@@ -111,7 +112,7 @@ const PredictionCurve: React.FC<PredictionCurveProps> = ({
             <Box sx={{
               position: 'absolute',
               bottom: -30,
-              left: `${50 + (expectedStat - propValue) * 20}%`,
+              left: `${Math.max(0, Math.min(100, 50 + (expectedStat - propValue) * 20))}%`,
               transform: 'translateX(-50%)',
               textAlign: 'center',
             }}>

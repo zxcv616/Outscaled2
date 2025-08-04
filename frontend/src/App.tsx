@@ -4,7 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Header } from './components/Header';
 import { EnhancedPredictionForm } from './components/enhanced/EnhancedPredictionForm';
-import { PredictionResult } from './components/PredictionResult';
+import { EnhancedPredictionResult } from './components/enhanced/EnhancedPredictionResult';
 import { predictionApi } from './services/api';
 import { PredictionRequest, PredictionResponse } from './types/api';
 
@@ -193,7 +193,7 @@ function App() {
               <EnhancedPredictionForm onSubmit={handlePrediction} loading={loading} />
             </Paper>
             
-            <PredictionResult 
+            <EnhancedPredictionResult 
               result={result} 
               request={currentRequest}
               loading={loading} 

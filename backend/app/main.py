@@ -61,6 +61,7 @@ class PredictionResponse(BaseModel):
     sample_details: dict
     confidence_warning: str = ""
     prediction_curve: Optional[List[dict]] = None  # New field for prediction curve
+    prop_value: float  # The prop line value from the request
 
 @app.get("/")
 async def root():
@@ -90,7 +91,7 @@ async def predict_prop(request: PredictionRequest):
         sample_details = features.pop('sample_details', None)
         
         # Generate main prediction
-        prediction_result = prediction_model.predict(features, request.prop_value, sample_details)
+        prediction_result = prediction_model.predict(features, request.prop_value, sample_details, request.prop_type)
         
         # Generate prediction curve around the input prop value
         prediction_curve = prediction_model.generate_prediction_curve(
@@ -102,6 +103,9 @@ async def predict_prop(request: PredictionRequest):
         
         # Add prediction curve to the response
         prediction_result['prediction_curve'] = prediction_curve
+        
+        # Add the prop value from the request to the response
+        prediction_result['prop_value'] = request.prop_value
         
         return prediction_result
         

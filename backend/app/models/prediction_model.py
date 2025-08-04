@@ -386,7 +386,7 @@ class PredictionModel:
         
         return np.array(feature_vector).reshape(1, -1)
     
-    def predict(self, features: Dict[str, float], prop_value: float, sample_details: Dict[str, Any] = None) -> Dict[str, Any]:
+    def predict(self, features: Dict[str, float], prop_value: float, sample_details: Dict[str, Any] = None, prop_type: str = None) -> Dict[str, Any]:
         """
         Generate prediction with calibrated probabilities and confidence scaling
         """
@@ -471,6 +471,8 @@ class PredictionModel:
             'confidence': round(final_confidence * 100, 1),
             'base_model_confidence': round(base_confidence * 100, 1),
             'expected_stat': round(expected_stat, 1),
+            'prop_value': prop_value,  # Include the prop_value that was passed in
+            'prop_type': prop_type or 'kills',  # Include the prop_type that was passed in
             'confidence_interval': confidence_interval,
             'reasoning': reasoning,
             'player_stats': player_stats,

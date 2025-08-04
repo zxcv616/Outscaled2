@@ -148,6 +148,17 @@ async def get_available_tournaments():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get tournaments: {str(e)}")
 
+@app.get("/positions")
+async def get_available_positions():
+    """
+    Get list of all available player positions for role-based filtering
+    """
+    try:
+        positions = data_processor.get_available_positions()
+        return {"positions": positions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get positions: {str(e)}")
+
 @app.post("/check-data-availability")
 async def check_data_availability(request: dict):
     """

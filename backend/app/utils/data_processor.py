@@ -1,7 +1,8 @@
 """
-CRITICAL BETTING LOGIC IMPLEMENTATION
+CRITICAL BETTING LOGIC IMPLEMENTATION + POSITION FILTERING
 
-This module implements the corrected betting logic for League of Legends prediction system.
+This module implements the corrected betting logic for League of Legends prediction system
+with proper role-based data filtering.
 
 BETTING TERMINOLOGY EXPLANATION:
 ===============================
@@ -22,11 +23,25 @@ CORRECTED IMPLEMENTATION:
 - Then calculates mean/std on those COMBINED totals
 - This correctly reflects how betting markets work
 
+POSITION FILTERING IMPLEMENTATION:
+=================================
+
+NEW: Role-based data filtering is now properly implemented:
+- get_player_data(player, position) filters CSV data by 'position' column
+- Only includes games where player played the specified role
+- Maps common aliases: 'bot' -> 'adc', 'jng' -> 'jungle', etc.
+- No artificial stat adjustments - let actual positional data determine patterns
+- This ensures predictions are based on relevant role-specific performance
+
 EXAMPLE:
 ========
 Player has 3 kills in Map 1, 5 kills in Map 2
 - OLD (WRONG): "Maps 1-2" = (3+5)/2 = 4.0 average
 - NEW (CORRECT): "Maps 1-2" = 3+5 = 8 combined
+
+Player played ADC in 50 games, Support in 20 games
+- OLD (WRONG): Used all 70 games regardless of prediction context
+- NEW (CORRECT): Filter to only ADC games when predicting ADC performance
 
 This change affects every prediction and is critical for accuracy.
 """
@@ -55,6 +70,7 @@ class DataProcessor:
             
             # Try different paths for data files
             data_paths = [
+                '/Users/matthewwiecking/Desktop/Outscaled2/data/2024_LoL_esports_match_data_from_OraclesElixir.csv',
                 '/app/data/2024_LoL_esports_match_data_from_OraclesElixir.csv',
                 '../data/2024_LoL_esports_match_data_from_OraclesElixir.csv',
                 '../../data/2024_LoL_esports_match_data_from_OraclesElixir.csv'
@@ -71,19 +87,32 @@ class DataProcessor:
                     break
             
             if data_2024_path is None:
-                logger.warning("Data files not found. Using empty DataFrame for testing.")
+                logger.warning("Data files not found at expected paths. Using empty DataFrame for testing.")
+                logger.warning("Expected paths checked:")
+                for path in data_paths:
+                    logger.warning(f"  - {path}")
                 self.data_2024 = pd.DataFrame()
                 self.data_2025 = pd.DataFrame()
                 self.combined_data = pd.DataFrame()
                 return
             
             # Load 2024 data
-            logger.info("Loading 2024 data...")
-            self.data_2024 = pd.read_csv(data_2024_path)
+            logger.info(f"Loading 2024 data from: {data_2024_path}")
+            try:
+                self.data_2024 = pd.read_csv(data_2024_path)
+                logger.info(f"2024 data loaded successfully: {len(self.data_2024)} rows")
+            except Exception as e:
+                logger.error(f"Error loading 2024 data: {e}")
+                self.data_2024 = pd.DataFrame()
             
             # Load 2025 data
-            logger.info("Loading 2025 data...")
-            self.data_2025 = pd.read_csv(data_2025_path)
+            logger.info(f"Loading 2025 data from: {data_2025_path}")
+            try:
+                self.data_2025 = pd.read_csv(data_2025_path)
+                logger.info(f"2025 data loaded successfully: {len(self.data_2025)} rows")
+            except Exception as e:
+                logger.error(f"Error loading 2025 data: {e}")
+                self.data_2025 = pd.DataFrame()
             
             # Combine datasets
             self.combined_data = pd.concat([self.data_2024, self.data_2025], ignore_index=True)
@@ -123,17 +152,23 @@ class DataProcessor:
     
     def _preprocess_data(self):
         """Clean and preprocess the data"""
-        # Convert date to datetime
-        self.combined_data['date'] = pd.to_datetime(self.combined_data['date'])
-        
-        # Fill NaN values
-        numeric_columns = self.combined_data.select_dtypes(include=[np.number]).columns
-        self.combined_data[numeric_columns] = self.combined_data[numeric_columns].fillna(0)
-        
-        # Convert position to lowercase for consistency
-        self.combined_data['position'] = self.combined_data['position'].str.lower()
-        
-        logger.info("Data preprocessing completed")
+        try:
+            # Convert date to datetime
+            if 'date' in self.combined_data.columns:
+                self.combined_data['date'] = pd.to_datetime(self.combined_data['date'], errors='coerce')
+            
+            # Fill NaN values
+            numeric_columns = self.combined_data.select_dtypes(include=[np.number]).columns
+            self.combined_data[numeric_columns] = self.combined_data[numeric_columns].fillna(0)
+            
+            # Convert position to lowercase for consistency
+            if 'position' in self.combined_data.columns:
+                self.combined_data['position'] = self.combined_data['position'].astype(str).str.lower()
+            
+            logger.info("Data preprocessing completed")
+        except Exception as e:
+            logger.error(f"Error in data preprocessing: {e}")
+            logger.warning("Continuing with minimal preprocessing")
     
     def filter_player_data(self, player_names: List[str], map_range: List[int], 
                           team: str = None, opponent: str = None, tournament: str = None) -> pd.DataFrame:
@@ -164,7 +199,7 @@ class DataProcessor:
     
     def filter_player_data_with_tiers(self, player_names: List[str], map_range: List[int], 
                                     team: str = None, opponent: str = None, tournament: str = None,
-                                    strict_mode: bool = False) -> Dict[str, Any]:
+                                    strict_mode: bool = False, position: str = None) -> Dict[str, Any]:
         """
         Filter player data using tiered fallback system with confidence weighting
         Returns: {'data': DataFrame, 'tier_info': Dict, 'sample_sources': Dict}
@@ -214,8 +249,8 @@ class DataProcessor:
         for tier_idx, tier in enumerate(tiers):
             logger.info(f"Trying {tier['name']} (weight: {tier['weight']})")
             
-            # Filter data for this tier
-            tier_data = self._filter_by_tier_criteria(player_names, tier['criteria'], team, opponent)
+            # Filter data for this tier with position filtering
+            tier_data = self._filter_by_tier_criteria(player_names, tier['criteria'], team, opponent, position)
             
             if len(tier_data) >= 5:  # Minimum viable sample size
                 logger.info(f"Tier {tier_idx + 1} successful: {len(tier_data)} maps")
@@ -278,7 +313,7 @@ class DataProcessor:
         
         return composite_weight
     
-    def _filter_by_tier_criteria(self, player_names: List[str], criteria: Dict, team: str = None, opponent: str = None) -> pd.DataFrame:
+    def _filter_by_tier_criteria(self, player_names: List[str], criteria: Dict, team: str = None, opponent: str = None, position: str = None) -> pd.DataFrame:
         """Filter data based on tier-specific criteria"""
         filtered_data = self.combined_data.copy()
         
@@ -317,6 +352,15 @@ class DataProcessor:
         
         if opponent and 'opponent' in filtered_data.columns:
             filtered_data = filtered_data[filtered_data['opponent'] == opponent]
+        
+        # Apply position filtering if specified
+        if position is not None:
+            try:
+                filtered_data = self._filter_data_by_position(filtered_data, position)
+                logger.info(f"Applied position filter '{position}': {len(filtered_data)} matches remaining")
+            except Exception as e:
+                logger.error(f"Error applying position filter '{position}': {e}")
+                logger.warning("Continuing without position filter")
         
         return filtered_data
     
@@ -489,16 +533,11 @@ class DataProcessor:
             features['form_z_score'] = 0
             features['form_deviation_ratio'] = 1
         
-        # Role-aware features
+        # Position information (no longer used for stat adjustment)
         position = player_data['position'].iloc[0] if not player_data.empty else 'mid'
-        position_weights = {
-            'sup': 1.2,  # Supports typically have more assists
-            'jng': 1.1,  # Junglers often have good assist numbers
-            'mid': 1.15,  # MID gets slight boost for kills (was 1.0)
-            'bot': 0.9,
-            'top': 0.8
-        }
-        features['position_factor'] = position_weights.get(position, 1.0)
+        # Position factor is always 1.0 - no role-based expectation adjustments
+        # Role filtering should happen at the data level, not through stat multipliers
+        features['position_factor'] = 1.0
         
         # Quality/Volatility metrics
         features['sample_size_score'] = min(features['maps_played'] / 10, 1.0)  # Normalize to 0-1
@@ -595,6 +634,28 @@ class DataProcessor:
     def process_request(self, request, strict_mode: bool = False) -> Dict[str, Any]:
         """Process the prediction request and return engineered features with tier information"""
         
+        # Extract position information from request if available
+        target_position = None
+        try:
+            if hasattr(request, 'position_roles') and request.position_roles:
+                # Ensure position_roles is a list and has at least one element
+                if isinstance(request.position_roles, list) and len(request.position_roles) > 0:
+                    target_position = request.position_roles[0]
+                    if target_position and str(target_position).strip():  # Ensure it's not empty or whitespace
+                        target_position = str(target_position).strip()
+                        logger.info(f"Using position '{target_position}' for data filtering")
+                    else:
+                        target_position = None
+                        logger.info("Position role is empty, using all positions")
+                else:
+                    logger.info("No valid position roles found, using all positions")
+            else:
+                logger.info("No position_roles attribute or empty, using all positions")
+        except Exception as e:
+            logger.error(f"Error extracting position from request: {e}")
+            logger.info("Using all positions due to error")
+            target_position = None
+        
         # Auto-infer team if not provided
         if not request.team or request.team.strip() == "":
             if len(request.player_names) == 1:
@@ -614,15 +675,26 @@ class DataProcessor:
                 else:
                     logger.warning(f"Could not infer team for combo prediction. Proceeding without team filtering.")
         
-        # Use tiered filtering system
-        tier_result = self.filter_player_data_with_tiers(
-            player_names=request.player_names,
-            map_range=request.map_range,
-            team=request.team,
-            opponent=request.opponent,
-            tournament=request.tournament,
-            strict_mode=strict_mode
-        )
+        # Use tiered filtering system with position filtering
+        try:
+            tier_result = self.filter_player_data_with_tiers(
+                player_names=request.player_names,
+                map_range=request.map_range,
+                team=request.team,
+                opponent=request.opponent,
+                tournament=request.tournament,
+                strict_mode=strict_mode,
+                position=target_position  # Pass position for filtering
+            )
+        except Exception as e:
+            logger.error(f"Error in tier filtering: {e}")
+            # Return empty result with error info
+            tier_result = {
+                'data': pd.DataFrame(),
+                'tier_info': {'tier': 0, 'weight': 0.0, 'name': 'Error', 'description': f'Filtering error: {str(e)}', 'maps_used': 0},
+                'sample_sources': {},
+                'fallback_used': False
+            }
         
         player_data = tier_result['data']
         tier_info = tier_result['tier_info']
@@ -930,26 +1002,125 @@ class DataProcessor:
         logger.info(f"Found {len(cleaned_players)} unique players in dataset")
         return cleaned_players
     
-    def get_player_data(self, player_name: str) -> pd.DataFrame:
-        """Get all historical data for a specific player"""
-        # Combine data from both years
-        combined_data = pd.concat([self.data_2024, self.data_2025], ignore_index=True)
+    def get_player_data(self, player_name: str, position: str = None) -> pd.DataFrame:
+        """Get historical data for a specific player, optionally filtered by position"""
+        # Use combined_data which is already loaded and preprocessed
+        if self.combined_data is None or self.combined_data.empty:
+            logger.warning("No combined data available")
+            return pd.DataFrame()
         
         # Filter for the specific player
-        player_data = combined_data[combined_data['playername'] == player_name].copy()
+        player_data = self.combined_data[self.combined_data['playername'] == player_name].copy()
+        
+        if player_data.empty:
+            logger.warning(f"No data found for player: {player_name}")
+            return pd.DataFrame()
+        
+        # Apply position filtering if specified
+        if position is not None:
+            player_data = self._filter_data_by_position(player_data, position)
+            logger.info(f"Filtered to {len(player_data)} matches for {player_name} in position '{position}'")
+        else:
+            logger.info(f"Retrieved {len(player_data)} total matches for player {player_name}")
         
         # Sort by date if available
         if 'date' in player_data.columns:
             player_data['date'] = pd.to_datetime(player_data['date'], errors='coerce')
             player_data = player_data.sort_values('date')
         
-        # Add position information if not present
-        if 'position' not in player_data.columns:
-            # Try to infer position from role or other columns
-            if 'role' in player_data.columns:
-                player_data['position'] = player_data['role'].str.lower()
-            else:
-                player_data['position'] = 'mid'  # Default
+        return player_data
+    
+    def get_available_positions(self) -> List[str]:
+        """Get list of all available positions in the dataset"""
+        if self.combined_data is None or self.combined_data.empty:
+            return []
         
-        logger.info(f"Retrieved {len(player_data)} matches for player {player_name}")
-        return player_data 
+        try:
+            # Get unique positions and clean them
+            positions = self.combined_data['position'].dropna().unique().tolist()
+            cleaned_positions = [pos.strip().lower() for pos in positions if pos.strip()]
+            return sorted(set(cleaned_positions))
+        except Exception as e:
+            logger.error(f"Error getting available positions: {e}")
+            return []
+    
+    def validate_position_filtering(self, player_name: str, position: str) -> Dict[str, Any]:
+        """Validate position filtering for a specific player"""
+        if self.combined_data is None or self.combined_data.empty:
+            return {'valid': False, 'error': 'No data loaded'}
+        
+        # Get all data for player
+        all_player_data = self.get_player_data(player_name)
+        if all_player_data.empty:
+            return {'valid': False, 'error': f'No data found for player {player_name}'}
+        
+        # Get position-filtered data
+        position_filtered_data = self.get_player_data(player_name, position)
+        
+        # Get position distribution for this player
+        position_counts = all_player_data['position'].value_counts().to_dict()
+        
+        return {
+            'valid': True,
+            'player': player_name,
+            'target_position': position,
+            'total_matches': len(all_player_data),
+            'filtered_matches': len(position_filtered_data),
+            'position_distribution': position_counts,
+            'filter_effectiveness': len(position_filtered_data) / len(all_player_data) if len(all_player_data) > 0 else 0
+        }
+    
+    def _filter_data_by_position(self, player_data: pd.DataFrame, target_position: str) -> pd.DataFrame:
+        """Filter player data to only include games where they played the target position"""
+        try:
+            if player_data.empty:
+                logger.warning("Empty player data provided to position filter")
+                return player_data
+            
+            if 'position' not in player_data.columns:
+                logger.warning("No position column found in data - returning all data")
+                return player_data
+            
+            if target_position is None or not target_position.strip():
+                logger.info("No target position specified - returning all data")
+                return player_data
+            
+            # Map common position abbreviations - based on actual CSV data (CSV uses lowercase)
+            position_mapping = {
+                'top': ['top'],  # Note: CSV might not have 'top', could be different
+                'jungle': ['jng'],  # CSV uses 'jng' 
+                'jng': ['jng'],
+                'mid': ['mid'],  # CSV uses 'mid'
+                'adc': ['bot'],  # CSV uses 'bot' for ADC
+                'bot': ['bot'],  # CSV uses 'bot'
+                'support': ['sup'],  # CSV might use 'sup'
+                'sup': ['sup']
+            }
+            
+            # Normalize target position
+            target_position_lower = target_position.lower().strip()
+            
+            # Find matching positions
+            target_positions = []
+            for role, aliases in position_mapping.items():
+                if target_position_lower == role or target_position_lower in aliases:
+                    target_positions.extend(aliases)
+                    break
+            
+            # If no mapping found, use the position as-is
+            if not target_positions:
+                target_positions = [target_position_lower]
+            
+            # Filter data to only include games in target position
+            initial_count = len(player_data)
+            position_matches = player_data['position'].str.lower().isin(target_positions)
+            filtered_data = player_data[position_matches]
+            
+            logger.info(f"Position filtering: {initial_count} total games -> {len(filtered_data)} games in position '{target_position}' (matched: {target_positions})")
+            
+            return filtered_data
+        
+        except Exception as e:
+            logger.error(f"Error in position filtering: {e}")
+            logger.error(f"Returning all data for safety")
+            return player_data 

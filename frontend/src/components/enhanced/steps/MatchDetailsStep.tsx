@@ -3,10 +3,6 @@ import {
   Box,
   Typography,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Card,
   CardContent,
@@ -38,12 +34,14 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
   const [availableTeams, setAvailableTeams] = useState<string[]>([]);
   const [availableTournaments, setAvailableTournaments] = useState<string[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(false);
+  const [loadingTournaments, setLoadingTournaments] = useState(false);
   const [teamSuggestions, setTeamSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoadingTeams(true);
+        setLoadingTournaments(true);
         
         const [teamsResponse, tournamentsResponse] = await Promise.all([
           predictionApi.getTeams(),
@@ -61,6 +59,7 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
         console.error('Failed to load match data:', error);
       } finally {
         setLoadingTeams(false);
+        setLoadingTournaments(false);
       }
     };
 
@@ -98,26 +97,6 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
 
   const applySuggestedTeam = (team: string) => {
     onChange({ team });
-  };
-
-  const formatTournamentOption = (tournament: string) => {
-    // Add visual indicators for different tournament types
-    const tournamentLower = tournament.toLowerCase();
-    let icon = 'T';
-    let category = 'Tournament';
-    
-    if (tournamentLower.includes('world') || tournamentLower.includes('championship')) {
-      icon = 'W';
-      category = 'World Championship';
-    } else if (tournamentLower.includes('spring') || tournamentLower.includes('summer')) {
-      icon = 'R';
-      category = 'Regional League';
-    } else if (tournamentLower.includes('msi')) {
-      icon = 'I';
-      category = 'International';
-    }
-
-    return { tournament, icon, category };
   };
 
   const getCurrentDateTime = () => {
@@ -179,47 +158,16 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
           Tournament
         </Typography>
         
-        <FormControl fullWidth>
-          <InputLabel>Tournament</InputLabel>
-          <Select
-            value={formData.tournament || ''}
-            label="Tournament"
-            onChange={(e) => onChange({ tournament: e.target.value })}
-            sx={{
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.main',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.main',
-                borderWidth: 2,
-              },
-            }}
-          >
-            {availableTournaments.map((tournament) => {
-              const formatted = formatTournamentOption(tournament);
-              return (
-                <MenuItem key={tournament} value={tournament}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography component="span" sx={{ fontSize: '1.2rem' }}>
-                      {formatted.icon}
-                    </Typography>
-                    <Box>
-                      <Typography sx={{ fontWeight: 500 }}>
-                        {formatted.tournament}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatted.category}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </FormControl>
+        <EnhancedAutocomplete
+          options={availableTournaments}
+          value={formData.tournament || ''}
+          onChange={(value) => onChange({ tournament: value as string })}
+          loading={loadingTournaments}
+          placeholder="Search tournaments..."
+          label="Tournament"
+          error={errors.tournament}
+          helpText="Select the tournament where this match is taking place"
+        />
       </Box>
 
       {/* Team Selection */}

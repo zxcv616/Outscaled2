@@ -50,19 +50,23 @@ The application requires League of Legends match data in CSV format. Place your 
 - **Tier 4**: Recent matches 6-12 months (weight: 0.5)
 - **Tier 5**: Older matches/other teams (weight: 0.3)
 
-### Prediction Logic
+### Expected Statistic Estimation Framework
 
 **Expected Statistic Calculation**:
 ```
-expected_stat = (base_expected + form_adjustment - volatility_penalty + confidence_adjustment) * position_factor
+expected_stat = (μ_base + δ_form - φ_vol + γ_conf) * λ_pos
 ```
 
 Where:
-- `base_expected`: Historical average kills
-- `form_adjustment`: tanh(form_z_score * 0.5) * 0.8 (bounded impact)
-- `volatility_penalty`: volatility * 0.3
-- `confidence_adjustment`: (model_confidence - 0.5) * 2.0
-- `position_factor`: Position-specific multiplier
+- `μ_base`: Historical baseline kills (long-term average)
+- `δ_form`: tanh(form_z_score * 0.5) * 0.8 — nonlinear bounded adjustment for recent form
+- `φ_vol`: volatility * 0.3 — penalizes high recent performance variability
+- `γ_conf`: (model_confidence - 0.5) * 2.0 — adjustment based on calibrated model confidence
+- `λ_pos`: Position-specific multiplier reflecting role-based kill expectations
+
+This formulation integrates historical performance, bounded momentum, and risk/uncertainty corrections, scaled by role-dependent structural expectations.
+
+### Confidence Calculation
 
 **Confidence Calculation**:
 ```
@@ -117,4 +121,3 @@ python run_confidence_tests.py quick
 ### Documentation
 - `backend/TESTING_GUIDE.md` - Complete testing guide
 - `backend/CONFIDENCE_FIX_SUMMARY.md` - Fix details
-

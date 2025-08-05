@@ -68,24 +68,88 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
 
   // Generate team suggestions based on selected players
   useEffect(() => {
-    const generateTeamSuggestions = () => {
+    const generateTeamSuggestions = async () => {
       if (!formData.player_names?.length || !availableTeams.length) {
         setTeamSuggestions([]);
         return;
       }
 
-      // Simple heuristic: suggest teams based on player names
-      const suggestions = availableTeams.filter(team => {
-        const teamLower = team.toLowerCase();
-        return formData.player_names.some((player: string) => {
-          const playerLower = player.toLowerCase();
-          // Check if team name appears in player name or vice versa
-          return teamLower.includes(playerLower.split(' ')[0]) || 
-                 playerLower.includes(teamLower.split(' ')[0]);
-        });
-      }).slice(0, 3); // Limit to top 3 suggestions
+      // Better team matching logic
+      const suggestions: string[] = [];
+      
+      // Known team mappings for common players (this would ideally come from the API)
+      const playerTeamMappings: Record<string, string[]> = {
+        // Professional players and their known teams
+        'faker': ['T1', 'SK Telecom T1'],
+        'caps': ['G2 Esports'],
+        'bjergsen': ['Team SoloMid', 'TSM'],
+        'doublelift': ['Team Liquid', 'TSM'],
+        'impact': ['Team Liquid'],
+        'jensen': ['Team Liquid', 'Cloud9'],
+        'perkz': ['G2 Esports', 'Cloud9'],
+        'rekkles': ['Fnatic', 'G2 Esports'],
+        'uzi': ['Royal Never Give Up', 'RNG'],
+        'deft': ['DRX', 'KT Rolster'],
+        'showmaker': ['DAMWON KIA'],
+        'canyon': ['DAMWON KIA'],
+        'chovy': ['Gen.G', 'Griffin'],
+        'ruler': ['Gen.G', 'Samsung Galaxy'],
+        'knight': ['Top Esports'],
+        'jackeylove': ['Top Esports', 'Invictus Gaming'],
+        'theshy': ['Invictus Gaming'],
+        'rookie': ['Invictus Gaming'],
+        'ning': ['Invictus Gaming'],
+      };
 
-      setTeamSuggestions(suggestions);
+      // Check each selected player
+      for (const player of formData.player_names) {
+        const playerLower = player.toLowerCase();
+        
+        // First, check our known mappings
+        const knownTeams = playerTeamMappings[playerLower];
+        if (knownTeams) {
+          for (const knownTeam of knownTeams) {
+            const matchingTeam = availableTeams.find(team => 
+              team.toLowerCase().includes(knownTeam.toLowerCase()) ||
+              knownTeam.toLowerCase().includes(team.toLowerCase())
+            );
+            if (matchingTeam && !suggestions.includes(matchingTeam)) {
+              suggestions.push(matchingTeam);
+            }
+          }
+        }
+        
+        // Fallback: Look for exact or partial matches in team names
+        // But be more strict to avoid false positives
+        if (suggestions.length < 3) {
+          const exactMatches = availableTeams.filter(team => {
+            const teamLower = team.toLowerCase();
+            const teamWords = teamLower.split(/\s+/);
+            const playerWords = playerLower.split(/\s+/);
+            
+            // Check if any significant word from player name matches team name
+            return playerWords.some((playerWord: string) => 
+              playerWord.length > 2 && // Ignore short words
+              teamWords.some((teamWord: string) => 
+                teamWord.length > 2 &&
+                (teamWord.includes(playerWord) || playerWord.includes(teamWord))
+              )
+            );
+          });
+          
+          // Only add if the match seems reasonable (avoid generic matches)
+          for (const match of exactMatches) {
+            if (!suggestions.includes(match) && 
+                !match.toLowerCase().includes('one man') && // Avoid "A One Man's Army"
+                !match.toLowerCase().includes('army') &&
+                match.length > 3) { // Avoid very short team names
+              suggestions.push(match);
+            }
+          }
+        }
+      }
+
+      setTeamSuggestions(suggestions.slice(0, 3));
     };
 
     generateTeamSuggestions();
@@ -137,24 +201,17 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
   };
 
   return (
-    <Box sx={{ py: 2 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-          <EmojiEvents sx={{ fontSize: 32, color: 'primary.main', mr: 1 }} />
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Match Details
-          </Typography>
-        </Box>
-        <Typography variant="body1" color="text.secondary">
-          Specify the tournament, teams, and match timing
-        </Typography>
-      </Box>
+    <Box>
 
       {/* Tournament Selection */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-          <EmojiEvents sx={{ mr: 1, color: 'primary.main' }} />
+      <Box sx={{ mb: 1.5 }}>
+        <Typography variant="body2" sx={{ 
+          mb: 1, 
+          display: 'flex', 
+          alignItems: 'center',
+          fontWeight: 500
+        }}>
+          <EmojiEvents sx={{ mr: 0.5, color: 'primary.main', fontSize: 16 }} />
           Tournament
         </Typography>
         
@@ -171,12 +228,12 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
       </Box>
 
       {/* Team Selection */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-          <Group sx={{ mr: 1, color: 'primary.main' }} />
+      <Box sx={{ mb: 1.5 }}>
+        <Typography variant="body2" sx={{ mb: 1, display: 'flex', alignItems: 'center', fontWeight: 500 }}>
+          <Group sx={{ mr: 0.5, color: 'primary.main', fontSize: 16 }} />
           Team (Optional)
           <Tooltip title="Leave blank to auto-infer from player history">
-            <Info sx={{ ml: 1, fontSize: 16, color: 'text.secondary' }} />
+            <Info sx={{ ml: 0.5, fontSize: 12, color: 'text.secondary' }} />
           </Tooltip>
         </Typography>
         
@@ -192,37 +249,43 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
 
         {/* Team Suggestions */}
         {teamSuggestions.length > 0 && !formData.team && (
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 1.5 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Suggested teams based on selected players:
+              Suggested teams for {formData.player_names?.[0]}:
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {teamSuggestions.map((team) => (
                 <Chip
                   key={team}
                   label={team}
-                  icon={<AutoAwesome />}
+                  icon={<AutoAwesome sx={{ fontSize: 16 }} />}
                   onClick={() => applySuggestedTeam(team)}
+                  size="small"
                   sx={{
                     background: 'rgba(63, 81, 181, 0.1)',
                     border: '1px solid rgba(63, 81, 181, 0.3)',
                     color: 'primary.main',
                     cursor: 'pointer',
+                    transition: 'all 0.2s ease',
                     '&:hover': {
                       background: 'rgba(63, 81, 181, 0.2)',
+                      transform: 'scale(1.05)',
                     },
                   }}
                 />
               ))}
             </Stack>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              Click to select, or leave blank for auto-inference
+            </Typography>
           </Box>
         )}
       </Box>
 
       {/* Opponent Selection */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-          <Group sx={{ mr: 1, color: 'secondary.main' }} />
+      <Box sx={{ mb: 1.5 }}>
+        <Typography variant="body2" sx={{ mb: 1, display: 'flex', alignItems: 'center', fontWeight: 500 }}>
+          <Group sx={{ mr: 0.5, color: 'secondary.main', fontSize: 16 }} />
           Opponent Team
         </Typography>
         
@@ -239,9 +302,9 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
       </Box>
 
       {/* Match Date */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-          <CalendarToday sx={{ mr: 1, color: 'primary.main' }} />
+      <Box sx={{ mb: 0 }}>
+        <Typography variant="body2" sx={{ mb: 1, display: 'flex', alignItems: 'center', fontWeight: 500 }}>
+          <CalendarToday sx={{ mr: 0.5, color: 'primary.main', fontSize: 16 }} />
           Match Date & Time
         </Typography>
         
@@ -273,72 +336,6 @@ export const MatchDetailsStep: React.FC<MatchDetailsStepProps> = ({
         />
       </Box>
 
-      {/* Form Summary */}
-      {formData.tournament && formData.opponent && (
-        <Card
-          sx={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: 2,
-          }}
-        >
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-              <Info sx={{ mr: 1, color: 'info.main' }} />
-              Match Summary
-            </Typography>
-            
-            <Stack spacing={1}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Tournament:
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {formData.tournament}
-                </Typography>
-              </Box>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Team:
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {formData.team || 'Auto-inferred'}
-                </Typography>
-              </Box>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Opponent:
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {formData.opponent}
-                </Typography>
-              </Box>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Match Date:
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {new Date(formData.match_date).toLocaleString()}
-                </Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Validation Alert */}
-      {!formData.tournament || !formData.opponent ? (
-        <Alert severity="warning" sx={{ mt: 2 }}>
-          Please select both tournament and opponent to proceed to the next step.
-        </Alert>
-      ) : (
-        <Alert severity="success" sx={{ mt: 2 }}>
-          Match details are complete! You can now proceed to configure your prediction.
-        </Alert>
-      )}
     </Box>
   );
 };

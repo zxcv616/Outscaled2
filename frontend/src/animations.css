@@ -1,0 +1,360 @@
+/* Professional UI Animations for League of Legends Prop Predictions */
+
+/* Global Animation Variables */
+:root {
+  --animation-speed-fast: 0.15s;
+  --animation-speed-normal: 0.3s;
+  --animation-speed-slow: 0.6s;
+  --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Smooth Scroll Behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Loading State Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading shimmer effect */
+.loading-shimmer {
+  animation: shimmer 1.5s infinite linear;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 0px,
+    rgba(255, 255, 255, 0.2) 40px,
+    rgba(255, 255, 255, 0.1) 80px
+  );
+  background-size: 200px 100%;
+}
+
+/* Card hover animations */
+.card-hover {
+  transition: all var(--animation-speed-normal) var(--animation-easing);
+  transform: translateY(0px);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Button micro-interactions */
+.button-micro {
+  transition: all var(--animation-speed-fast) var(--animation-easing);
+  transform: translateY(0px) scale(1);
+}
+
+.button-micro:hover {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.button-micro:active {
+  transform: translateY(0px) scale(0.98);
+  transition: all 0.1s var(--animation-easing);
+}
+
+/* Form field focus animations */
+.form-field-focus {
+  transition: all var(--animation-speed-normal) var(--animation-easing);
+}
+
+.form-field-focus:focus-within {
+  transform: scale(1.02);
+}
+
+/* Reveal animations for content */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0px);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0px);
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Staggered animation classes */
+.animate-fadeInUp {
+  animation: fadeInUp var(--animation-speed-slow) var(--animation-easing) both;
+}
+
+.animate-fadeInDown {
+  animation: fadeInDown var(--animation-speed-slow) var(--animation-easing) both;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft var(--animation-speed-slow) var(--animation-easing) both;
+}
+
+.animate-slideInRight {
+  animation: slideInRight var(--animation-speed-slow) var(--animation-easing) both;
+}
+
+.animate-scaleIn {
+  animation: scaleIn var(--animation-speed-slow) var(--animation-easing) both;
+}
+
+/* Delay classes for staggered animations */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-600 { animation-delay: 0.6s; }
+
+/* Confidence badge glow animation */
+@keyframes confidenceGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+  }
+}
+
+.confidence-high {
+  animation: confidenceGlow 2s ease-in-out infinite;
+}
+
+/* Prediction result animations */
+@keyframes resultReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotateY(90deg);
+  }
+  50% {
+    transform: scale(1.05) rotateY(45deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+.result-reveal {
+  animation: resultReveal 0.8s var(--animation-easing) both;
+}
+
+/* Chart and graph animations */
+@keyframes drawLine {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.chart-line {
+  stroke-dasharray: 1000;
+  animation: drawLine 2s ease-out both;
+}
+
+/* Loading skeleton animations */
+@keyframes skeletonLoading {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 0px,
+    rgba(255, 255, 255, 0.15) 40px,
+    rgba(255, 255, 255, 0.05) 80px
+  );
+  background-size: 200px 100%;
+  animation: skeletonLoading 1.5s infinite;
+}
+
+/* Accordion expand animation */
+@keyframes accordionExpand {
+  0% {
+    max-height: 0;
+    opacity: 0;
+  }
+  100% {
+    max-height: 500px;
+    opacity: 1;
+  }
+}
+
+.accordion-content {
+  animation: accordionExpand var(--animation-speed-normal) var(--animation-easing);
+}
+
+/* Mobile-specific animations */
+@media (max-width: 768px) {
+  /* Reduce motion for mobile performance */
+  .card-hover:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Faster animations on mobile */
+  .animate-fadeInUp,
+  .animate-fadeInDown,
+  .animate-slideInLeft,
+  .animate-slideInRight,
+  .animate-scaleIn {
+    animation-duration: 0.4s;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus animations for accessibility */
+*:focus-visible {
+  outline: 2px solid #3f51b5;
+  outline-offset: 2px;
+  transition: outline-offset var(--animation-speed-fast) var(--animation-easing);
+}
+
+/* Icon animations */
+@keyframes iconBounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
+  60% {
+    transform: translateY(-3px);
+  }
+}
+
+.icon-bounce {
+  animation: iconBounce 1s infinite;
+}
+
+/* Notification animations */
+@keyframes slideInFromTop {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.notification-slide {
+  animation: slideInFromTop var(--animation-speed-normal) var(--animation-easing);
+}
+
+/* Loading dots animation */
+@keyframes loadingDots {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.loading-dots {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: loadingDots 1.4s infinite ease-in-out both;
+}
+
+.loading-dots:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots:nth-child(2) { animation-delay: -0.16s; }
+.loading-dots:nth-child(3) { animation-delay: 0; }

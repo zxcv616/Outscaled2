@@ -30,7 +30,7 @@ This ensures predictions align with how betting markets actually work.
 
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Union
 import logging
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.calibration import CalibratedClassifierCV
@@ -42,6 +42,19 @@ from sklearn.model_selection import train_test_split
 logger = logging.getLogger(__name__)
 
 class PredictionModel:
+    # Unified feature order definition - THIS IS THE SINGLE SOURCE OF TRUTH
+    FEATURE_ORDER = [
+        'avg_kills', 'avg_assists', 'std_dev_kills', 'std_dev_assists',
+        'maps_played', 'longterm_kills_avg', 'longterm_assists_avg',
+        'form_z_score', 'form_deviation_ratio', 'position_factor',
+        'sample_size_score', 'avg_deaths', 'avg_damage', 'avg_vision',
+        'avg_cs', 'avg_gold_at_10', 'avg_xp_at_10', 'avg_cs_at_10',
+        'avg_gold_diff_10', 'avg_xp_diff_10', 'avg_cs_diff_10',
+        'avg_gold_at_15', 'avg_xp_at_15', 'avg_cs_at_15',
+        'avg_gold_diff_15', 'avg_xp_diff_15', 'avg_cs_diff_15',
+        'avg_gold_at_20', 'avg_xp_at_20', 'avg_cs_at_20',
+        'avg_gold_diff_20', 'avg_xp_diff_20', 'avg_cs_diff_20'
+    ]
     def __init__(self):
         self.model = None
         self.scaler = StandardScaler()
@@ -126,55 +139,80 @@ class PredictionModel:
         
         for player in sample_players:
             try:
-                # Get real player data
-                # NOTE: The data_processor.get_player_data() method should be updated to accept
-                # a position parameter to filter data by role. For now, we get all data.
-                player_data = data_processor.get_player_data(player)
-                
-                # TODO: Update this to use position filtering once data processor supports it
-                # Example: player_data = data_processor.get_player_data(player, position='mid')
-                # For now, if position data exists, we could filter here but we don't know target position
-                
-                if len(player_data) < 8:  # Require more data for series-based training
+                # Get player's available positions to create position-specific training samples
+                all_player_data = data_processor.get_player_data(player)
+                if len(all_player_data) < 8:  # Need minimum data
                     continue
                 
-                # Generate training samples based on SERIES outcomes, not individual matches
-                # This aligns with betting logic where we predict combined stats across map ranges
-                for window_size in [8, 12, 16, 20]:  # Series-based windows
-                    if len(player_data) >= window_size + 2:  # Need extra data for validation
-                        # Use historical window for features
-                        historical_data = player_data.iloc[:-2]  # All but last 2 matches
-                        recent_window = historical_data.tail(window_size)
+                # Get all positions this player has played
+                if 'position' in all_player_data.columns:
+                    player_positions = all_player_data['position'].dropna().unique()
+                else:
+                    player_positions = ['unknown']  # Fallback if no position data
+                
+                # Create training samples for each position this player has played
+                for position in player_positions:
+                    try:
+                        # Get position-filtered data (this now works with the fixed data_processor)
+                        if position != 'unknown':
+                            player_data = data_processor.get_player_data(player, position=position)
+                        else:
+                            player_data = all_player_data
                         
-                        # Get validation matches (last 2 matches to simulate "Maps 1-2")
-                        validation_matches = player_data.iloc[-2:]
-                        
-                        if len(recent_window) < window_size or len(validation_matches) < 2:
+                        if len(player_data) < 8:  # Require sufficient data for this position
                             continue
                         
-                        # Calculate features from historical window
-                        features_dict = self._extract_betting_aligned_features(recent_window, player)
-                        feature_vector = self._dict_to_feature_vector(features_dict)
+                        logger.info(f"Training on {player} in position '{position}': {len(player_data)} matches")
                         
-                        # BETTING LOGIC: Calculate COMBINED performance across validation matches
-                        # This simulates predicting "Maps 1-2 combined kills/assists"
-                        combined_actual = validation_matches['kills'].sum()  # Total across both matches
+                    except Exception as e:
+                        logger.warning(f"Error filtering position '{position}' for player {player}: {e}")
+                        # Fallback to all data if position filtering fails
+                        player_data = all_player_data
+                        if len(player_data) < 8:
+                            continue
                         
-                        # Generate realistic prop based on historical COMBINED performance
-                        historical_combined_avg = self._calculate_historical_combined_avg(recent_window)
-                        prop_value = self._generate_betting_realistic_prop(historical_combined_avg, recent_window)
-                        
-                        # Label: 1 if combined_actual > prop, 0 otherwise
-                        label = 1 if combined_actual > prop_value else 0
-                        
-                        # Weight based on data quality and betting logic factors
-                        sample_weight = self._calculate_betting_sample_weight(
-                            recent_window, validation_matches, window_size
-                        )
-                        
-                        training_samples.append(feature_vector)
-                        training_labels.append(label)
-                        training_weights.append(sample_weight)
+                        # Generate training samples based on SERIES outcomes, not individual matches
+                        # This aligns with betting logic where we predict combined stats across map ranges
+                        for window_size in [8, 12, 16, 20]:  # Series-based windows
+                            if len(player_data) >= window_size + 2:  # Need extra data for validation
+                                # Use historical window for features
+                                historical_data = player_data.iloc[:-2]  # All but last 2 matches
+                                recent_window = historical_data.tail(window_size)
+                                
+                                # Get validation matches (last 2 matches to simulate "Maps 1-2")
+                                validation_matches = player_data.iloc[-2:]
+                                
+                                if len(recent_window) < window_size or len(validation_matches) < 2:
+                                    continue
+                                
+                                # Calculate features from historical window
+                                features_dict = self._extract_betting_aligned_features(recent_window, player)
+                                feature_vector = self._dict_to_feature_vector(features_dict)
+                                
+                                # BETTING LOGIC: Create training samples for both kills AND assists
+                                # This ensures the model learns patterns for both prop types
+                                for prop_type in ['kills', 'assists']:
+                                    if prop_type not in validation_matches.columns:
+                                        continue  # Skip if this stat isn't available
+                                    
+                                    # Calculate COMBINED performance across validation matches
+                                    combined_actual = validation_matches[prop_type].sum()  # Total across both matches
+                                    
+                                    # Generate realistic prop based on historical COMBINED performance for this stat type
+                                    historical_combined_avg = self._calculate_historical_combined_avg(recent_window, prop_type)
+                                    prop_value = self._generate_betting_realistic_prop(historical_combined_avg, recent_window, prop_type)
+                                    
+                                    # Label: 1 if combined_actual > prop, 0 otherwise
+                                    label = 1 if combined_actual > prop_value else 0
+                                    
+                                    # Weight based on data quality and betting logic factors
+                                    sample_weight = self._calculate_betting_sample_weight(
+                                        recent_window, validation_matches, window_size
+                                    )
+                                    
+                                    training_samples.append(feature_vector)
+                                    training_labels.append(label)
+                                    training_weights.append(sample_weight)
             
             except Exception as e:
                 logger.warning(f"Error processing player {player}: {e}")
@@ -199,86 +237,209 @@ class PredictionModel:
         return X, y, sample_weights
     
     def _dict_to_feature_vector(self, features_dict):
-        """Convert feature dictionary to vector format for model training"""
-        # Use the same feature order as _prepare_features
-        feature_names = [
-            'avg_kills', 'avg_assists', 'std_dev_kills', 'std_dev_assists',
-            'maps_played', 'longterm_kills_avg', 'longterm_assists_avg',
-            'form_z_score', 'form_deviation_ratio', 'position_factor',
-            'sample_size_score', 'avg_deaths', 'avg_damage', 'avg_vision',
-            'avg_cs', 'avg_gold_at_10', 'avg_xp_at_10', 'avg_cs_at_10',
-            'avg_gold_diff_15', 'avg_xp_diff_15', 'avg_cs_diff_15'
-        ]
-        
-        feature_vector = []
-        for feature in feature_names:
-            feature_vector.append(features_dict.get(feature, 0))
-        
-        return feature_vector
+        """Convert feature dictionary to vector format for model training using unified feature extraction"""
+        # Use the same feature order as _prepare_features for consistency
+        return self._extract_unified_features(features_dict, return_as_vector=True)
     
-    def _extract_real_features(self, player_data, player_name):
-        """Extract real features from historical player data"""
-        # Calculate real statistical features
+    def _extract_unified_features(self, features_dict: Dict[str, float], return_as_vector: bool = False) -> Union[Dict[str, float], List[float]]:
+        """
+        UNIFIED FEATURE EXTRACTION METHOD - Single source of truth for all feature processing
+        
+        This method ensures consistent feature handling across training and prediction by:
+        1. Using the same feature order (FEATURE_ORDER)
+        2. Applying the same default value logic
+        3. Handling missing features consistently
+        4. Validating feature ranges
+        """
+        # Create standardized feature dictionary with defaults
+        unified_features = {}
+        missing_features = []
+        
+        for feature_name in self.FEATURE_ORDER:
+            if feature_name in features_dict and features_dict[feature_name] is not None:
+                # Use actual value if available
+                value = features_dict[feature_name]
+                
+                # Apply range validation and clipping
+                if feature_name in ['avg_kills', 'avg_assists']:
+                    value = max(0, min(value, 20))  # Reasonable stat bounds
+                elif feature_name == 'position_factor':
+                    value = max(0.5, min(value, 2.0))  # Position factor bounds
+                elif feature_name in ['std_dev_kills', 'std_dev_assists']:
+                    value = max(0, value)  # Standard deviation must be non-negative
+                elif feature_name in ['maps_played', 'series_played']:
+                    value = max(0, int(value))  # Sample size must be non-negative integer
+                
+                unified_features[feature_name] = value
+            else:
+                # Use calculated default value
+                default_value = self._get_unified_feature_default(feature_name, features_dict)
+                unified_features[feature_name] = default_value
+                missing_features.append(feature_name)
+        
+        if missing_features:
+            logger.debug(f"Using defaults for missing features: {missing_features}")
+        
+        if return_as_vector:
+            # Return as ordered list for model input
+            return [unified_features[feature] for feature in self.FEATURE_ORDER]
+        else:
+            # Return as dictionary for further processing
+            return unified_features
+    
+    def _extract_unified_features_from_data(self, player_data, player_name) -> Dict[str, float]:
+        """
+        Extract unified features directly from player data - ensures consistency with data processor
+        """
+        if player_data.empty:
+            return self._get_unified_default_features()
+        
+        # Calculate basic statistics from data
         kills_data = player_data['kills'].dropna()
         assists_data = player_data['assists'].dropna()
         
         if len(kills_data) == 0:
-            return self._get_default_features_dict()
+            return self._get_unified_default_features()
         
-        # Basic statistics
-        avg_kills = kills_data.mean()
-        avg_assists = assists_data.mean() if len(assists_data) > 0 else 0
-        std_dev_kills = kills_data.std()
-        std_dev_assists = assists_data.std() if len(assists_data) > 0 else 1.0
+        # Basic statistics using consistent calculation methods
+        features = {}
+        
+        # Core stats
+        features['avg_kills'] = kills_data.mean()
+        features['avg_assists'] = assists_data.mean() if len(assists_data) > 0 else 0
+        features['std_dev_kills'] = kills_data.std()
+        features['std_dev_assists'] = assists_data.std() if len(assists_data) > 0 else 1.0
+        features['maps_played'] = len(player_data)
+        
+        # Long-term averages (same as current for consistency)
+        features['longterm_kills_avg'] = features['avg_kills']
+        features['longterm_assists_avg'] = features['avg_assists']
         
         # Form calculation (recent vs historical)
         if len(kills_data) >= 5:
             recent_avg = kills_data.tail(5).mean()
-            form_z_score = (recent_avg - avg_kills) / max(std_dev_kills, 0.1)
+            features['form_z_score'] = (recent_avg - features['avg_kills']) / max(features['std_dev_kills'], 0.1)
         else:
-            form_z_score = 0.0
+            features['form_z_score'] = 0.0
         
-        # Position factor (extract from data)
-        position_factor = self._extract_position_factor(player_data)
+        # Volatility calculation
+        features['form_deviation_ratio'] = features['std_dev_kills'] / max(features['avg_kills'], 0.1)
         
-        # Volatility calculation (form_deviation_ratio)
-        volatility = std_dev_kills / max(avg_kills, 0.1)
+        # Position factor (always 1.0 - no role-based adjustments)
+        features['position_factor'] = 1.0
         
         # Sample size score
-        sample_size_score = min(len(player_data) / 50.0, 1.0)
+        features['sample_size_score'] = min(len(player_data) / 50.0, 1.0)
         
-        # Additional features from real data
-        avg_deaths = player_data['deaths'].mean() if 'deaths' in player_data.columns else 2.5
-        avg_damage = player_data['damagetochampions'].mean() if 'damagetochampions' in player_data.columns else 20000
-        avg_vision = player_data['visionscore'].mean() if 'visionscore' in player_data.columns else 40
-        avg_cs = player_data['total cs'].mean() if 'total cs' in player_data.columns else 250
+        # Additional performance metrics
+        features['avg_deaths'] = player_data['deaths'].mean() if 'deaths' in player_data.columns else 2.5
+        features['avg_damage'] = player_data['damagetochampions'].mean() if 'damagetochampions' in player_data.columns else 20000
+        features['avg_vision'] = player_data['visionscore'].mean() if 'visionscore' in player_data.columns else 40
+        features['avg_cs'] = player_data['total cs'].mean() if 'total cs' in player_data.columns else 250
         
-        # Create feature dictionary matching _prepare_features exactly
-        features = {
-            'avg_kills': avg_kills,
-            'avg_assists': avg_assists,
-            'std_dev_kills': std_dev_kills,
-            'std_dev_assists': std_dev_assists,
-            'maps_played': len(player_data),
-            'longterm_kills_avg': avg_kills,  # Use same as avg_kills for now
-            'longterm_assists_avg': avg_assists,  # Use same as avg_assists for now
-            'form_z_score': form_z_score,
-            'form_deviation_ratio': volatility,  # Use volatility as form deviation
-            'position_factor': position_factor,
-            'sample_size_score': sample_size_score,
-            'avg_deaths': avg_deaths,
-            'avg_damage': avg_damage,
-            'avg_vision': avg_vision,
-            'avg_cs': avg_cs,
-            'avg_gold_at_10': 8000,  # Placeholder - not available in current data
-            'avg_xp_at_10': 6000,    # Placeholder - not available in current data
-            'avg_cs_at_10': 80,      # Placeholder - not available in current data
-            'avg_gold_diff_15': 0,   # Placeholder - not available in current data
-            'avg_xp_diff_15': 0,     # Placeholder - not available in current data
-            'avg_cs_diff_15': 0      # Placeholder - not available in current data
-        }
+        # Early game metrics with real CSV column calculations (10 minutes)
+        features['avg_gold_at_10'] = player_data['goldat10'].mean() if 'goldat10' in player_data.columns else 8000
+        features['avg_xp_at_10'] = player_data['xpat10'].mean() if 'xpat10' in player_data.columns else 6000
+        features['avg_cs_at_10'] = player_data['csat10'].mean() if 'csat10' in player_data.columns else 80
+        features['avg_gold_diff_10'] = player_data['golddiffat10'].mean() if 'golddiffat10' in player_data.columns else 0
+        features['avg_xp_diff_10'] = player_data['xpdiffat10'].mean() if 'xpdiffat10' in player_data.columns else 0
+        features['avg_cs_diff_10'] = player_data['csdiffat10'].mean() if 'csdiffat10' in player_data.columns else 0
+        
+        # Mid game metrics with real CSV column calculations (15 minutes)
+        features['avg_gold_at_15'] = player_data['goldat15'].mean() if 'goldat15' in player_data.columns else 12000
+        features['avg_xp_at_15'] = player_data['xpat15'].mean() if 'xpat15' in player_data.columns else 9000
+        features['avg_cs_at_15'] = player_data['csat15'].mean() if 'csat15' in player_data.columns else 120
+        features['avg_gold_diff_15'] = player_data['golddiffat15'].mean() if 'golddiffat15' in player_data.columns else 0
+        features['avg_xp_diff_15'] = player_data['xpdiffat15'].mean() if 'xpdiffat15' in player_data.columns else 0
+        features['avg_cs_diff_15'] = player_data['csdiffat15'].mean() if 'csdiffat15' in player_data.columns else 0
+        
+        # Late early game metrics with real CSV column calculations (20 minutes)
+        features['avg_gold_at_20'] = player_data['goldat20'].mean() if 'goldat20' in player_data.columns else 16000
+        features['avg_xp_at_20'] = player_data['xpat20'].mean() if 'xpat20' in player_data.columns else 12000
+        features['avg_cs_at_20'] = player_data['csat20'].mean() if 'csat20' in player_data.columns else 160
+        features['avg_gold_diff_20'] = player_data['golddiffat20'].mean() if 'golddiffat20' in player_data.columns else 0
+        features['avg_xp_diff_20'] = player_data['xpdiffat20'].mean() if 'xpdiffat20' in player_data.columns else 0
+        features['avg_cs_diff_20'] = player_data['csdiffat20'].mean() if 'csdiffat20' in player_data.columns else 0
+        
+        # Add combined stats for betting logic
+        if len(kills_data) >= 2:
+            combined_kills = []
+            for i in range(0, len(kills_data) - 1, 2):
+                if i + 1 < len(kills_data):
+                    combined_kills.append(kills_data.iloc[i] + kills_data.iloc[i+1])
+            
+            if combined_kills:
+                features['combined_kills'] = np.mean(combined_kills)
+                features['std_dev_combined_kills'] = np.std(combined_kills)
+                features['series_played'] = len(combined_kills)
+        
+        if len(assists_data) >= 2:
+            combined_assists = []
+            for i in range(0, len(assists_data) - 1, 2):
+                if i + 1 < len(assists_data):
+                    combined_assists.append(assists_data.iloc[i] + assists_data.iloc[i+1])
+            
+            if combined_assists:
+                features['combined_assists'] = np.mean(combined_assists)
+                features['std_dev_combined_assists'] = np.std(combined_assists)
         
         return features
+    
+    def _get_unified_feature_default(self, feature_name: str, context_features: Dict[str, float]) -> float:
+        """
+        Get unified default values for missing features with context awareness
+        """
+        # Context-aware defaults based on available features
+        position_factor = context_features.get('position_factor', 1.0)
+        avg_kills = context_features.get('avg_kills', 3.0)
+        avg_assists = context_features.get('avg_assists', 5.0)
+        
+        defaults = {
+            'avg_kills': 3.0,
+            'avg_assists': 5.0,
+            'std_dev_kills': max(1.0, avg_kills * 0.4),  # Context-aware std dev
+            'std_dev_assists': max(1.0, avg_assists * 0.3),  # Context-aware std dev
+            'maps_played': 10,
+            'longterm_kills_avg': avg_kills,  # Use current avg if available
+            'longterm_assists_avg': avg_assists,  # Use current avg if available
+            'form_z_score': 0.0,
+            'form_deviation_ratio': 0.3,
+            'position_factor': 1.0,  # Always neutral
+            'sample_size_score': 0.5,
+            'avg_deaths': 2.5,
+            'avg_damage': 18000,
+            'avg_vision': 40,
+            'avg_cs': 250,
+            'avg_gold_at_10': 8000,
+            'avg_xp_at_10': 6000,
+            'avg_cs_at_10': 80,
+            'avg_gold_diff_10': 0,
+            'avg_xp_diff_10': 0,
+            'avg_cs_diff_10': 0,
+            'avg_gold_at_15': 12000,
+            'avg_xp_at_15': 9000,
+            'avg_cs_at_15': 120,
+            'avg_gold_diff_15': 0,
+            'avg_xp_diff_15': 0,
+            'avg_cs_diff_15': 0,
+            'avg_gold_at_20': 16000,
+            'avg_xp_at_20': 12000,
+            'avg_cs_at_20': 160,
+            'avg_gold_diff_20': 0,
+            'avg_xp_diff_20': 0,
+            'avg_cs_diff_20': 0
+        }
+        
+        return defaults.get(feature_name, 0.0)
+    
+    def _get_unified_default_features(self) -> Dict[str, float]:
+        """Get complete set of default features using unified method"""
+        default_context = {}
+        return {feature: self._get_unified_feature_default(feature, default_context) for feature in self.FEATURE_ORDER}
+
+    def _extract_real_features(self, player_data, player_name):
+        """Extract real features from historical player data using unified method"""
+        return self._extract_unified_features_from_data(player_data, player_name)
     
     def _extract_position_factor(self, player_data):
         """Extract position information from data - now used for data filtering, not stat adjustment"""
@@ -294,41 +455,92 @@ class PredictionModel:
         # Default neutral factor
         return 1.0
     
-    def _calculate_historical_combined_avg(self, recent_data):
+    def _calculate_historical_combined_avg(self, recent_data, prop_type='kills'):
         """Calculate historical average for COMBINED performance (Maps 1-2 equivalent)"""
         # Simulate combined performance by taking pairs of consecutive matches
         combined_performances = []
         for i in range(0, len(recent_data) - 1, 2):
             if i + 1 < len(recent_data):
-                combined = recent_data.iloc[i]['kills'] + recent_data.iloc[i+1]['kills']
+                combined = recent_data.iloc[i][prop_type] + recent_data.iloc[i+1][prop_type]
                 combined_performances.append(combined)
         
-        return np.mean(combined_performances) if combined_performances else recent_data['kills'].mean() * 2
+        return np.mean(combined_performances) if combined_performances else recent_data[prop_type].mean() * 2
     
-    def _generate_betting_realistic_prop(self, historical_combined_avg, recent_data):
-        """Generate realistic prop value based on betting logic and bookmaker margins"""
+    def _generate_betting_realistic_prop(self, historical_combined_avg, recent_data, prop_type='kills'):
+        """Generate realistic prop value based on actual betting market percentiles and bookmaker behavior"""
         base_prop = historical_combined_avg
         
-        # Apply bookmaker margin based on betting logic
-        # Bookmakers typically set lines that are slightly harder to hit (inducing UNDER bias)
-        margin_factor = np.random.uniform(1.05, 1.15)  # 5-15% margin
-        prop_value = base_prop * margin_factor
+        # Calculate realistic prop using percentile-based approach
+        # Real betting markets typically set lines around the 45th-55th percentile to induce UNDER bias
+        stat_data = recent_data[prop_type].dropna()
+        if len(stat_data) >= 4:
+            # Create combined stats from pairs of consecutive matches
+            combined_performances = []
+            for i in range(0, len(stat_data) - 1, 2):
+                if i + 1 < len(stat_data):
+                    combined = stat_data.iloc[i] + stat_data.iloc[i+1]
+                    combined_performances.append(combined)
+            
+            if len(combined_performances) >= 2:
+                combined_performances = np.array(combined_performances)
+                
+                # Use realistic percentile for prop setting (bookmakers favor UNDER)
+                # Different percentiles based on market conditions
+                percentile_options = [45, 47, 50, 52, 55]  # Common bookmaker percentiles
+                chosen_percentile = np.random.choice(percentile_options)
+                prop_value = np.percentile(combined_performances, chosen_percentile)
+                
+                # Apply small bookmaker margin (1-3% typical for established markets)
+                margin = np.random.uniform(1.01, 1.03)
+                prop_value *= margin
+                
+                # Add position-based market adjustment (data-driven, not random)
+                position_data = recent_data.get('position', pd.Series(['mid'] * len(recent_data)))
+                if not position_data.empty:
+                    primary_position = position_data.mode().iloc[0] if len(position_data.mode()) > 0 else 'mid'
+                    
+                    # Realistic position adjustments based on LoL meta
+                    position_factors = {
+                        'mid': 1.02,    # Slightly higher (carry potential)
+                        'adc': 1.03,    # Highest (main damage dealer)
+                        'bot': 1.03,    # Same as ADC
+                        'top': 0.98,    # Slightly lower (tank/utility focus)
+                        'jng': 0.99,    # Lower (utility/objective focus)
+                        'sup': 0.85,    # Much lower (support role)
+                        'support': 0.85
+                    }
+                    
+                    position_factor = position_factors.get(primary_position.lower(), 1.0)
+                    prop_value *= position_factor
+                
+                # Ensure reasonable bounds
+                prop_value = max(0.5, min(prop_value, base_prop * 2.0))
+                
+                return prop_value
         
-        # Add position-based adjustments
-        # Support players typically get lower lines, ADC/Mid get higher
-        position_adjustment = np.random.uniform(0.9, 1.1)
-        prop_value *= position_adjustment
+        # Fallback to percentile-based approach if insufficient data for pairing
+        if len(stat_data) >= 2:
+            # Use 50th percentile as baseline with small margin
+            prop_value = np.percentile(stat_data, 50) * 2  # Double for 2-map equivalent
+            margin = np.random.uniform(1.01, 1.05)  # Slightly higher margin for less data
+            prop_value *= margin
+            
+            return max(1.0, min(prop_value, base_prop * 1.5))
         
-        # Ensure minimum prop value and add small noise
-        prop_value = max(1.0, prop_value)  # Minimum combined prop
-        noise = np.random.normal(0, 0.3)  # Slightly more noise for combined stats
-        prop_value += noise
-        
-        return max(1.0, prop_value)
+        # Final fallback - use historical average with conservative margin
+        margin = np.random.uniform(1.08, 1.12)  # Higher margin for uncertain data
+        return max(1.0, base_prop * margin)
     
     def _get_default_features(self):
         """Return default features when no real data is available"""
-        return [3.5, 5.0, 1.5, 2.0, 10, 3.5, 5.0, 0.0, 0.3, 1.0, 0.5, 2.5, 20000, 40, 250, 8000, 6000, 80, 0, 0, 0]
+        # Updated to match FEATURE_ORDER: avg_kills, avg_assists, std_dev_kills, std_dev_assists,
+        # maps_played, longterm_kills_avg, longterm_assists_avg, form_z_score, form_deviation_ratio, position_factor,
+        # sample_size_score, avg_deaths, avg_damage, avg_vision, avg_cs, avg_gold_at_10, avg_xp_at_10, avg_cs_at_10,
+        # avg_gold_diff_10, avg_xp_diff_10, avg_cs_diff_10, avg_gold_at_15, avg_xp_at_15, avg_cs_at_15,
+        # avg_gold_diff_15, avg_xp_diff_15, avg_cs_diff_15, avg_gold_at_20, avg_xp_at_20, avg_cs_at_20,
+        # avg_gold_diff_20, avg_xp_diff_20, avg_cs_diff_20
+        return [3.5, 5.0, 1.5, 2.0, 10, 3.5, 5.0, 0.0, 0.3, 1.0, 0.5, 2.5, 20000, 40, 250, 
+                8000, 6000, 80, 0, 0, 0, 12000, 9000, 120, 0, 0, 0, 16000, 12000, 160, 0, 0, 0]
     
     def _get_default_features_dict(self):
         """Return default features as a dictionary"""
@@ -351,9 +563,21 @@ class PredictionModel:
             'avg_gold_at_10': 8000,
             'avg_xp_at_10': 6000,
             'avg_cs_at_10': 80,
+            'avg_gold_diff_10': 0,
+            'avg_xp_diff_10': 0,
+            'avg_cs_diff_10': 0,
+            'avg_gold_at_15': 12000,
+            'avg_xp_at_15': 9000,
+            'avg_cs_at_15': 120,
             'avg_gold_diff_15': 0,
             'avg_xp_diff_15': 0,
-            'avg_cs_diff_15': 0
+            'avg_cs_diff_15': 0,
+            'avg_gold_at_20': 16000,
+            'avg_xp_at_20': 12000,
+            'avg_cs_at_20': 160,
+            'avg_gold_diff_20': 0,
+            'avg_xp_diff_20': 0,
+            'avg_cs_diff_20': 0
         }
     
     def _generate_betting_fallback_data(self):
@@ -397,7 +621,9 @@ class PredictionModel:
                 np.random.normal(20000, 5000),  # avg_damage
                 np.random.normal(40, 15),  # avg_vision
                 np.random.normal(250, 50),  # avg_cs
-                8000, 6000, 80, 0, 0, 0  # placeholder stats
+                8000, 6000, 80, 0, 0, 0,  # 10min stats: gold, xp, cs, diff_gold, diff_xp, diff_cs
+                12000, 9000, 120, 0, 0, 0,  # 15min stats: gold, xp, cs, diff_gold, diff_xp, diff_cs
+                16000, 12000, 160, 0, 0, 0  # 20min stats: gold, xp, cs, diff_gold, diff_xp, diff_cs
             ]
             
             # Generate label based on expected vs realistic prop
@@ -417,37 +643,9 @@ class PredictionModel:
         return np.array(X), np.array(y), np.array(sample_weights)
     
     def _extract_betting_aligned_features(self, player_data, player_name):
-        """Extract features aligned with betting logic for combined stats"""
-        # Use the existing _extract_real_features but ensure proper combined stat calculation
-        features = self._extract_real_features(player_data, player_name)
-        
-        # Add combined stat calculations for betting alignment
-        kills_data = player_data['kills'].dropna()
-        assists_data = player_data['assists'].dropna()
-        
-        if len(kills_data) >= 2:
-            # Calculate combined stats by pairing consecutive matches
-            combined_kills = []
-            for i in range(0, len(kills_data) - 1, 2):
-                if i + 1 < len(kills_data):
-                    combined_kills.append(kills_data.iloc[i] + kills_data.iloc[i+1])
-            
-            if combined_kills:
-                features['combined_kills'] = np.mean(combined_kills)
-                features['std_dev_combined_kills'] = np.std(combined_kills)
-                features['series_played'] = len(combined_kills)
-        
-        if len(assists_data) >= 2:
-            combined_assists = []
-            for i in range(0, len(assists_data) - 1, 2):
-                if i + 1 < len(assists_data):
-                    combined_assists.append(assists_data.iloc[i] + assists_data.iloc[i+1])
-            
-            if combined_assists:
-                features['combined_assists'] = np.mean(combined_assists)
-                features['std_dev_combined_assists'] = np.std(combined_assists)
-        
-        return features
+        """Extract features aligned with betting logic for combined stats using unified method"""
+        # Use unified feature extraction for consistency
+        return self._extract_unified_features_from_data(player_data, player_name)
     
     def _filter_data_by_position(self, player_data, target_position):
         """
@@ -568,38 +766,17 @@ class PredictionModel:
         return RuleBasedModel()
     
     def _prepare_features(self, features: Dict[str, float]) -> np.ndarray:
-        """Prepare features for model input with validation"""
-        # Define feature order for consistency
-        feature_names = [
-            'avg_kills', 'avg_assists', 'std_dev_kills', 'std_dev_assists',
-            'maps_played', 'longterm_kills_avg', 'longterm_assists_avg',
-            'form_z_score', 'form_deviation_ratio', 'position_factor',
-            'sample_size_score', 'avg_deaths', 'avg_damage', 'avg_vision',
-            'avg_cs', 'avg_gold_at_10', 'avg_xp_at_10', 'avg_cs_at_10',
-            'avg_gold_diff_15', 'avg_xp_diff_15', 'avg_cs_diff_15'
-        ]
+        """Prepare features for model input with validation using unified feature extraction"""
+        # Use unified feature extraction for consistency
+        feature_vector = self._extract_unified_features(features, return_as_vector=True)
         
-        # Validate and create feature vector with proper defaults
-        feature_vector = []
-        missing_features = []
-        
-        for feature in feature_names:
-            if feature in features and features[feature] is not None:
-                value = features[feature]
-                # Validate feature ranges
-                if feature in ['avg_kills', 'avg_assists'] and (value < 0 or value > 20):
-                    logger.warning(f"Feature {feature} has unusual value: {value}")
-                elif feature == 'position_factor' and (value < 0.5 or value > 2.0):
-                    logger.warning(f"Feature {feature} has unusual value: {value}")
-                feature_vector.append(value)
-            else:
-                # Use role-appropriate defaults
-                default_value = self._get_feature_default(feature, features.get('position_factor', 1.0))
-                feature_vector.append(default_value)
-                missing_features.append(feature)
-        
-        if missing_features:
-            logger.info(f"Using defaults for missing features: {missing_features}")
+        # Validate feature ranges
+        for i, value in enumerate(feature_vector):
+            feature_name = self.FEATURE_ORDER[i]
+            if feature_name in ['avg_kills', 'avg_assists'] and (value < 0 or value > 20):
+                logger.warning(f"Feature {feature_name} has unusual value: {value}")
+            elif feature_name == 'position_factor' and (value < 0.5 or value > 2.0):
+                logger.warning(f"Feature {feature_name} has unusual value: {value}")
         
         return np.array(feature_vector).reshape(1, -1)
     
@@ -626,9 +803,21 @@ class PredictionModel:
             'avg_gold_at_10': 8000,
             'avg_xp_at_10': 6000,
             'avg_cs_at_10': 80,
+            'avg_gold_diff_10': 0,
+            'avg_xp_diff_10': 0,
+            'avg_cs_diff_10': 0,
+            'avg_gold_at_15': 12000,
+            'avg_xp_at_15': 9000,
+            'avg_cs_at_15': 120,
             'avg_gold_diff_15': 0,
             'avg_xp_diff_15': 0,
-            'avg_cs_diff_15': 0
+            'avg_cs_diff_15': 0,
+            'avg_gold_at_20': 16000,
+            'avg_xp_at_20': 12000,
+            'avg_cs_at_20': 160,
+            'avg_gold_diff_20': 0,
+            'avg_xp_diff_20': 0,
+            'avg_cs_diff_20': 0
         }
         
         return defaults.get(feature_name, 0.0)
@@ -682,21 +871,11 @@ class PredictionModel:
         # Smaller gap = lower confidence (closer to the line)
         gap_adjustment = min(gap_ratio * 1.5, 0.3)  # Reduced cap to 30%
         
-        if prediction == "OVER":
-            # For OVER predictions, higher confidence when expected_stat >> prop_value
-            adjusted_confidence = min(base_model_confidence + gap_adjustment, 0.95)
-        else:
-            # For UNDER predictions, higher confidence when expected_stat << prop_value
-            # Fix: Ensure this doesn't exceed 1.0
-            under_base_confidence = 1 - base_model_confidence
-            adjusted_confidence = min(under_base_confidence + gap_adjustment, 0.95)
-        
-        # Apply tier-based scaling
+        # Use unified confidence calculation with proper bounds checking
         tier_info = sample_details.get('tier_info', {'weight': 1.0, 'tier': 1, 'name': 'Default Tier'})
-        final_confidence = adjusted_confidence * tier_info.get('weight', 1.0)
-        
-        # Ensure confidence is within bounds
-        final_confidence = max(0.1, min(0.95, final_confidence))
+        final_confidence = self._calculate_unified_confidence(
+            prediction, base_model_confidence, gap_adjustment, tier_info
+        )
         
         # Calculate confidence interval
         confidence_interval = self._calculate_bootstrap_confidence_interval(features, expected_stat)
@@ -794,18 +973,10 @@ class PredictionModel:
             # Smaller gap = lower confidence (closer to the line)
             gap_adjustment = min(gap_ratio * 2.0, 0.5)  # Cap adjustment at 50%
             
-            if prediction == "OVER":
-                # For OVER predictions, higher confidence when expected_stat >> prop_value
-                adjusted_confidence = base_model_confidence + gap_adjustment
-            else:
-                # For UNDER predictions, higher confidence when expected_stat << prop_value
-                adjusted_confidence = (1 - base_model_confidence) + gap_adjustment
-            
-            # Apply tier-based scaling
-            final_confidence = adjusted_confidence * tier_info.get('weight', 1.0)
-            
-            # Ensure confidence is within bounds
-            final_confidence = max(0.1, min(0.95, final_confidence))
+            # Use unified confidence calculation with proper bounds checking
+            final_confidence = self._calculate_unified_confidence(
+                prediction, base_model_confidence, gap_adjustment, tier_info
+            )
             
             # Extract key information
             curve_point = {
@@ -822,64 +993,184 @@ class PredictionModel:
     
     def _calculate_expected_stat(self, features: Dict[str, float]) -> float:
         """
-        Calculate expected statistic using BETTING LOGIC for combined stats.
+        Calculate expected statistic using BETTING LOGIC for combined stats with proper calculations.
         
         CRITICAL: Now works with COMBINED statistics across map ranges, not averages.
         This reflects proper betting terminology where "Maps 1-2" means total performance.
         """
+        # Ensure features are processed through unified extraction for consistency
+        unified_features = self._extract_unified_features(features)
+        
         # Get base model confidence for empirical estimation
-        feature_vector = self._prepare_features(features)
+        feature_vector = self._prepare_features(unified_features)
         prediction_proba = self.model.predict_proba(feature_vector)[0]
         
         # BETTING LOGIC: Base expected value from COMBINED performance average
-        # Fix: Use explicit None checks instead of 'or' logic to avoid 0 values being treated as False
-        base_expected = None
-        if features.get('combined_kills') is not None:
-            base_expected = features['combined_kills']
-        elif features.get('combined_assists') is not None:
-            base_expected = features['combined_assists']
-        elif features.get('avg_kills') is not None:
-            base_expected = features['avg_kills']
-        elif features.get('avg_assists') is not None:
-            base_expected = features['avg_assists']
-        else:
-            # Default based on general League stats (no role adjustment)
-            # All roles can have varying performance - let the data speak
-            base_expected = 3.0  # Neutral expectation for all roles
+        # Use explicit None checks and proper fallback hierarchy
+        base_expected = self._get_base_expected_stat(unified_features)
         
         logger.info(f"Expected stat calculation using COMBINED logic: base_expected={base_expected}")
         
         # Use model confidence to adjust expected stat
-        # Higher confidence in OVER prediction suggests higher expected performance
         model_confidence = prediction_proba[1]  # Probability of OVER
+        confidence_adjustment = (model_confidence - 0.5) * self._get_confidence_adjustment_factor(unified_features)
         
-        # Empirical adjustment based on model confidence (reduced impact to avoid overconfidence)
-        # If model is confident in OVER, expect higher performance
-        confidence_adjustment = (model_confidence - 0.5) * 1.0  # Reduced from 2.0 to 1.0
+        # Enhanced form adjustment with proper calculation
+        form_adjustment = self._calculate_form_adjustment(unified_features)
         
-        # Enhanced form adjustment with diminishing returns
-        form_z_score = features.get('form_z_score', 0)
-        form_adjustment = np.tanh(form_z_score * 0.5) * 0.6  # Reduced impact
+        # Volatility penalty with proper calculation
+        volatility_penalty = self._calculate_volatility_penalty(unified_features)
         
-        # Volatility penalty - high volatility reduces confidence in prediction
-        volatility = features.get('form_deviation_ratio', 0.3)  # Use consistent volatility key
-        volatility_penalty = min(volatility * 0.2, 0.5)  # Cap penalty
+        # Position factor (always 1.0 for neutral expectations)
+        position_factor = unified_features.get('position_factor', 1.0)
         
-        # Position factor with empirical calibration
-        position_factor = features.get('position_factor', 1.0)
+        # Sample size confidence with proper calculation
+        sample_confidence = self._calculate_sample_confidence(unified_features)
         
-        # BETTING LOGIC: Sample size is now series, not individual maps
-        sample_size = features.get('series_played') or features.get('maps_played', 10)
-        sample_confidence = min(sample_size / 15.0, 1.0)  # Faster confidence buildup
-        
-        # Calculate final expected stat with empirical model adjustment
-        expected_stat = (base_expected + form_adjustment - volatility_penalty + confidence_adjustment) * position_factor
+        # Calculate final expected stat with proper weighting
+        adjusted_expected = base_expected + form_adjustment - volatility_penalty + confidence_adjustment
+        expected_stat = adjusted_expected * position_factor
         
         # Apply sample size confidence adjustment
         expected_stat = expected_stat * sample_confidence + (base_expected * (1 - sample_confidence))
         
-        logger.info(f"Final expected stat (COMBINED): {expected_stat}")
+        logger.info(f"Final expected stat (UNIFIED): {expected_stat}")
         return max(expected_stat, 0)  # Ensure non-negative
+    
+    def _get_base_expected_stat(self, features: Dict[str, float]) -> float:
+        """Get base expected statistic with proper fallback hierarchy"""
+        # Priority order: combined stats > regular stats > defaults
+        if features.get('combined_kills') is not None and features['combined_kills'] > 0:
+            return features['combined_kills']
+        elif features.get('combined_assists') is not None and features['combined_assists'] > 0:
+            return features['combined_assists']
+        elif features.get('avg_kills') is not None and features['avg_kills'] > 0:
+            return features['avg_kills']
+        elif features.get('avg_assists') is not None and features['avg_assists'] > 0:
+            return features['avg_assists']
+        else:
+            # Neutral default based on League averages
+            return 3.0
+    
+    def _get_confidence_adjustment_factor(self, features: Dict[str, float]) -> float:
+        """Calculate confidence adjustment factor based on data quality"""
+        sample_size = features.get('maps_played', 10)
+        volatility = features.get('form_deviation_ratio', 0.3)
+        
+        # Reduce adjustment factor for small samples or high volatility
+        base_factor = 1.0
+        
+        if sample_size < 10:
+            base_factor *= 0.5  # Reduce for small samples
+        if volatility > 0.5:
+            base_factor *= 0.7  # Reduce for high volatility
+            
+        return base_factor
+    
+    def _calculate_form_adjustment(self, features: Dict[str, float]) -> float:
+        """Calculate form adjustment with proper bounds"""
+        form_z_score = features.get('form_z_score', 0)
+        # Use tanh for diminishing returns and proper bounds
+        return np.tanh(form_z_score * 0.5) * 0.6
+    
+    def _calculate_volatility_penalty(self, features: Dict[str, float]) -> float:
+        """Calculate volatility penalty with proper calculation"""
+        volatility = features.get('form_deviation_ratio', 0.3)
+        # Progressive penalty for high volatility
+        return min(volatility * 0.2, 0.5)
+    
+    def _calculate_sample_confidence(self, features: Dict[str, float]) -> float:
+        """Calculate sample confidence with proper thresholds"""
+        # Use series count if available, otherwise maps count
+        sample_size = features.get('series_played', features.get('maps_played', 10))
+        # More conservative confidence building
+        return min(sample_size / 20.0, 1.0)
+    
+    def validate_feature_consistency(self, features: Dict[str, float]) -> Dict[str, Any]:
+        """
+        Validate feature consistency between training and prediction
+        
+        Returns:
+            Dictionary with validation results and warnings
+        """
+        validation_results = {
+            'is_valid': True,
+            'warnings': [],
+            'errors': [],
+            'feature_coverage': {},
+            'recommendation': 'Features are consistent'
+        }
+        
+        # Check feature completeness
+        missing_features = []
+        for required_feature in self.FEATURE_ORDER:
+            if required_feature not in features or features[required_feature] is None:
+                missing_features.append(required_feature)
+        
+        if missing_features:
+            validation_results['warnings'].append(f"Missing features (using defaults): {missing_features}")
+            validation_results['feature_coverage']['missing'] = missing_features
+            validation_results['feature_coverage']['present'] = [f for f in self.FEATURE_ORDER if f not in missing_features]
+        else:
+            validation_results['feature_coverage']['missing'] = []
+            validation_results['feature_coverage']['present'] = self.FEATURE_ORDER.copy()
+        
+        # Check for unusual values
+        unified_features = self._extract_unified_features(features)
+        
+        for feature_name, value in unified_features.items():
+            if feature_name in ['avg_kills', 'avg_assists']:
+                if value < 0 or value > 15:
+                    validation_results['warnings'].append(f"{feature_name} has unusual value: {value}")
+            elif feature_name in ['std_dev_kills', 'std_dev_assists']:
+                if value < 0:
+                    validation_results['errors'].append(f"{feature_name} cannot be negative: {value}")
+                    validation_results['is_valid'] = False
+                elif value > 10:
+                    validation_results['warnings'].append(f"{feature_name} has high volatility: {value}")
+            elif feature_name == 'position_factor':
+                if value != 1.0:
+                    validation_results['warnings'].append(f"Position factor should be 1.0 (got {value}) - no role adjustments in new logic")
+            elif feature_name in ['maps_played', 'series_played']:
+                if value < 5:
+                    validation_results['warnings'].append(f"Small sample size for {feature_name}: {value}")
+        
+        # Check betting logic consistency
+        has_combined_stats = 'combined_kills' in unified_features or 'combined_assists' in unified_features
+        if not has_combined_stats:
+            validation_results['warnings'].append("No combined stats found - using fallback to individual match averages")
+            validation_results['recommendation'] = 'Consider updating data processor to include combined stats'
+        
+        # Check form calculation consistency  
+        form_z_score = unified_features.get('form_z_score', 0)
+        if abs(form_z_score) > 3:
+            validation_results['warnings'].append(f"Extreme form z-score detected: {form_z_score}")
+        
+        return validation_results
+    
+    def get_feature_extraction_summary(self, features: Dict[str, float]) -> Dict[str, Any]:
+        """
+        Get summary of feature extraction process for debugging
+        """
+        unified_features = self._extract_unified_features(features)
+        validation = self.validate_feature_consistency(features)
+        
+        return {
+            'input_features': len(features),
+            'unified_features': len(unified_features),
+            'feature_order_used': self.FEATURE_ORDER,
+            'validation': validation,
+            'extraction_method': 'unified',
+            'betting_logic_applied': True,
+            'key_stats': {
+                'avg_kills': unified_features.get('avg_kills'),
+                'combined_kills': unified_features.get('combined_kills'),
+                'maps_played': unified_features.get('maps_played'),
+                'series_played': unified_features.get('series_played'),
+                'position_factor': unified_features.get('position_factor'),
+                'form_z_score': unified_features.get('form_z_score')
+            }
+        }
     
     def _calculate_confidence_interval(self, features: Dict[str, float], expected_stat: float) -> List[float]:
         """Calculate confidence interval using BETTING LOGIC for combined stats"""
@@ -1213,6 +1504,33 @@ class PredictionModel:
             reasoning_parts.append("Low confidence prediction.")
         
         return " ".join(reasoning_parts)
+    
+    def _calculate_unified_confidence(self, prediction: str, base_model_confidence: float, 
+                                    gap_adjustment: float, tier_info: Dict = None) -> float:
+        """
+        Unified confidence calculation method to prevent edge cases and ensure consistent bounds.
+        Applies immediate bounds checking after each adjustment to prevent compounding issues.
+        """
+        if tier_info is None:
+            tier_info = {'weight': 1.0}
+        
+        # Apply gap adjustment with immediate bounds checking
+        if prediction == "OVER":
+            # For OVER predictions, higher confidence when expected_stat >> prop_value
+            adjusted_confidence = min(base_model_confidence + gap_adjustment, 0.95)
+        else:
+            # For UNDER predictions, higher confidence when expected_stat << prop_value
+            under_base_confidence = 1 - base_model_confidence
+            adjusted_confidence = min(under_base_confidence + gap_adjustment, 0.95)
+        
+        # Apply tier-based scaling with bounds protection
+        tier_weight = min(tier_info.get('weight', 1.0), 1.0)  # Ensure tier weight <= 1.0
+        final_confidence = adjusted_confidence * tier_weight
+        
+        # Final bounds checking - ensure confidence is within valid range
+        final_confidence = max(0.1, min(0.95, final_confidence))
+        
+        return final_confidence
     
     def _prepare_player_stats(self, features: Dict[str, float]) -> Dict[str, float]:
         """Prepare player stats for response using BETTING LOGIC"""

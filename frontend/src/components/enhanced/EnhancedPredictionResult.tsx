@@ -143,8 +143,8 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
     <Paper 
       elevation={24} 
       sx={{ 
-        p: 4, 
-        mb: 4,
+        p: { xs: 2, sm: 3, md: 4 }, 
+        mb: { xs: 2, sm: 3, md: 4 },
         borderRadius: 3,
         background: 'rgba(26, 26, 26, 0.95)',
         backdropFilter: 'blur(20px)',
@@ -152,28 +152,41 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
       }}
     >
       {/* Header with Prediction and Recommendation Badge */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' },
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 2, sm: 0 },
+        mb: { xs: 3, sm: 4 } 
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 48,
-              height: 48,
+              width: { xs: 40, sm: 48 },
+              height: { xs: 40, sm: 48 },
               borderRadius: 2,
               background: isOver ? 'linear-gradient(45deg, #4caf50, #66bb6a)' : 'linear-gradient(45deg, #f44336, #ef5350)',
-              mr: 2,
+              mr: { xs: 1.5, sm: 2 },
               boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             }}
           >
             {isOver ? <TrendingUp sx={{ color: 'white' }} /> : <TrendingDown sx={{ color: 'white' }} />}
           </Box>
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+            <Typography variant="h4" sx={{ 
+              fontWeight: 700, 
+              mb: 0.5,
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+            }}>
               {result.prediction}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" color="text.secondary" sx={{
+              fontSize: { xs: '0.875rem', sm: '1rem' }
+            }}>
               AI Prediction
             </Typography>
           </Box>
@@ -186,28 +199,40 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
           color={recommendation.color}
           size="medium"
           sx={{
-            fontSize: '1rem',
+            fontSize: { xs: '0.875rem', sm: '1rem' },
             fontWeight: 600,
-            px: 2,
-            py: 1,
+            px: { xs: 1.5, sm: 2 },
+            py: { xs: 0.75, sm: 1 },
             height: 'auto',
+            minWidth: { xs: 'auto', sm: 'fit-content' },
+            alignSelf: { xs: 'flex-start', sm: 'auto' },
           }}
         />
       </Box>
 
       {/* Core Metrics Row */}
-      <Grid2 container spacing={3} sx={{ mb: 4 }}>
-        <Grid2 size={{ xs: 12, md: 3 }}>
+      <Grid2 container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
+        <Grid2 size={{ xs: 6, sm: 6, md: 3 }}>
           <Card sx={{ 
             background: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: 2,
           }}>
-            <CardContent sx={{ textAlign: 'center', p: 3 }}>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+            <CardContent sx={{ 
+              textAlign: 'center', 
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Typography variant="h3" sx={{ 
+                fontWeight: 700, 
+                mb: 1,
+                fontSize: { xs: '1.5rem', sm: '1.875rem' }
+              }}>
                 {result.confidence}%
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>
                 Confidence Level
               </Typography>
               <Chip
@@ -220,53 +245,79 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
           </Card>
         </Grid2>
         
-        <Grid2 size={{ xs: 12, md: 3 }}>
+        <Grid2 size={{ xs: 6, sm: 6, md: 3 }}>
           <Card sx={{ 
             background: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: 2,
           }}>
-            <CardContent sx={{ textAlign: 'center', p: 3 }}>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+            <CardContent sx={{ 
+              textAlign: 'center', 
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Typography variant="h3" sx={{ 
+                fontWeight: 700, 
+                mb: 1,
+                fontSize: { xs: '1.5rem', sm: '1.875rem' }
+              }}>
                 {result.expected_stat.toFixed(1)}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>
                 Expected {result.prop_type}
               </Typography>
             </CardContent>
           </Card>
         </Grid2>
         
-        <Grid2 size={{ xs: 12, md: 3 }}>
+        <Grid2 size={{ xs: 6, sm: 6, md: 3 }}>
           <Card sx={{ 
             background: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: 2,
           }}>
-            <CardContent sx={{ textAlign: 'center', p: 3 }}>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+            <CardContent sx={{ 
+              textAlign: 'center', 
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Typography variant="h3" sx={{ 
+                fontWeight: 700, 
+                mb: 1,
+                fontSize: { xs: '1.5rem', sm: '1.875rem' }
+              }}>
                 {result.prop_value || 'N/A'}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>
                 Prop Line
               </Typography>
             </CardContent>
           </Card>
         </Grid2>
         
-        <Grid2 size={{ xs: 12, md: 3 }}>
+        <Grid2 size={{ xs: 6, sm: 6, md: 3 }}>
           <Card sx={{ 
             background: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: 2,
           }}>
-            <CardContent sx={{ textAlign: 'center', p: 3 }}>
+            <CardContent sx={{ 
+              textAlign: 'center', 
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
               <Tooltip title="Statistical distance from historical mean">
                 <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, cursor: 'help' }}>
                   {quantMetrics.zScore > 0 ? '+' : ''}{quantMetrics.zScore.toFixed(2)}
                 </Typography>
               </Tooltip>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>
                 Z-Score
               </Typography>
             </CardContent>
@@ -302,13 +353,17 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
                   Deviation Metrics
                 </Typography>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Percentile Rank</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Percentile Rank</Typography>
                   <Typography variant="h5" sx={{ fontWeight: 600 }}>
                     {quantMetrics.percentileRank}th percentile
                   </Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Prop/Expected Ratio</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Prop/Expected Ratio</Typography>
                   <Typography variant="h5" sx={{ fontWeight: 600 }}>
                     {quantMetrics.propToExpectedRatio.toFixed(2)}
                   </Typography>
@@ -324,19 +379,25 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
                   Volatility Analysis
                 </Typography>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Volatility</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Volatility</Typography>
                   <Typography variant="h5" sx={{ fontWeight: 600 }}>
                     {quantMetrics.volatility.toFixed(1)}% ({quantMetrics.riskGrade})
                   </Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Historical Hit Rate</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Historical Hit Rate</Typography>
                   <Typography variant="h5" sx={{ fontWeight: 600 }}>
                     {quantMetrics.hitRate}%
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" color="text.secondary">Trend</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Trend</Typography>
                   <Chip 
                     label={quantMetrics.volatilityTrend}
                     size="small"
@@ -354,19 +415,25 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
                   Context Snapshots
                 </Typography>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Last 3 Games</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Last 3 Games</Typography>
                   <Typography variant="h5" sx={{ fontWeight: 600 }}>
                     {contextualData.recentAverage.toFixed(1)} avg
                   </Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">vs {request?.opponent || 'Opponent'}</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>vs {request?.opponent || 'Opponent'}</Typography>
                   <Typography variant="h5" sx={{ fontWeight: 600 }}>
                     {contextualData.vsOpponentAverage?.toFixed(1) || 'N/A'} avg
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" color="text.secondary">Team Tempo</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Team Tempo</Typography>
                   <Typography variant="h5" sx={{ fontWeight: 600 }}>
                     {contextualData.teamTempo.toFixed(2)}x league avg
                   </Typography>
@@ -387,7 +454,7 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
         </Box>
         <Paper 
           sx={{ 
-            p: 3,
+            p: 2,
             background: 'rgba(255, 255, 255, 0.03)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: 2,
@@ -446,7 +513,7 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
         </Box>
         <Paper 
           sx={{ 
-            p: 3,
+            p: 2,
             background: 'rgba(255, 255, 255, 0.03)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: 2,
@@ -483,21 +550,29 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
             <Grid2 container spacing={2}>
               <Grid2 size={{ xs: 12, md: 6 }}>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Model Version</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Model Version</Typography>
                   <Typography variant="body1">v2.1.3 (Primary Model)</Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Training Date</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Training Date</Typography>
                   <Typography variant="body1">2024-07-15</Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Confidence Method</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Confidence Method</Typography>
                   <Typography variant="body1">{result.sample_details?.ci_method || 'Standard'}</Typography>
                 </Box>
               </Grid2>
               <Grid2 size={{ xs: 12, md: 6 }}>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Top Feature Drivers</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }}>Top Feature Drivers</Typography>
                   <Typography variant="body1">
                     • Recent Performance (0.62)<br/>
                     • Position Factor (0.21)<br/>

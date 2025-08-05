@@ -132,11 +132,63 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
   };
 
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ 
+      py: 2,
+      animation: 'fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+      '@keyframes fadeInUp': {
+        '0%': {
+          opacity: 0,
+          transform: 'translateY(20px)',
+        },
+        '100%': {
+          opacity: 1,
+          transform: 'translateY(0px)',
+        },
+      },
+    }}>
       {/* Header */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-          <Person sx={{ fontSize: 32, color: 'primary.main', mr: 1 }} />
+      <Box sx={{ 
+        mb: 4, 
+        textAlign: 'center',
+        animation: 'slideInDown 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both',
+        '@keyframes slideInDown': {
+          '0%': {
+            opacity: 0,
+            transform: 'translateY(-20px)',
+          },
+          '100%': {
+            opacity: 1,
+            transform: 'translateY(0px)',
+          },
+        },
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          mb: 2,
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'scale(1.05)',
+          },
+        }}>
+          <Person sx={{ 
+            fontSize: 32, 
+            color: 'primary.main', 
+            mr: 1,
+            animation: 'iconBounce 1s ease-in-out infinite',
+            '@keyframes iconBounce': {
+              '0%, 20%, 50%, 80%, 100%': {
+                transform: 'translateY(0)',
+              },
+              '40%': {
+                transform: 'translateY(-4px)',
+              },
+              '60%': {
+                transform: 'translateY(-2px)',
+              },
+            },
+          }} />
           <Typography variant="h5" sx={{ fontWeight: 600 }}>
             Select Players & Positions
           </Typography>
@@ -148,8 +200,17 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
 
       {/* Player Selection */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-          <Group sx={{ mr: 1, color: 'primary.main' }} />
+        <Typography variant="h6" sx={{ 
+          mb: { xs: 1.5, sm: 2 }, 
+          display: 'flex', 
+          alignItems: 'center',
+          fontSize: { xs: '1rem', sm: '1.125rem' }
+        }}>
+          <Group sx={{ 
+            mr: 1, 
+            color: 'primary.main',
+            fontSize: { xs: 20, sm: 24 }
+          }} />
           Select Player
         </Typography>
         
@@ -175,7 +236,11 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
                 <Chip
                   key={`${player}-${index}`}
                   avatar={
-                    <Avatar sx={{ bgcolor: 'primary.main', fontSize: '0.75rem' }}>
+                    <Avatar sx={{ 
+                      bgcolor: 'primary.main', 
+                      fontSize: '0.75rem',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}>
                       {player.charAt(0).toUpperCase()}
                     </Avatar>
                   }
@@ -186,6 +251,24 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
                     background: 'rgba(63, 81, 181, 0.1)',
                     borderColor: 'primary.main',
                     mb: 1,
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transform: 'scale(1)',
+                    animation: 'chipSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '@keyframes chipSlideIn': {
+                      '0%': {
+                        opacity: 0,
+                        transform: 'scale(0.8) translateX(-20px)',
+                      },
+                      '100%': {
+                        opacity: 1,
+                        transform: 'scale(1) translateX(0px)',
+                      },
+                    },
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                      background: 'rgba(63, 81, 181, 0.15)',
+                      boxShadow: '0 4px 12px rgba(63, 81, 181, 0.3)',
+                    },
                   }}
                 />
               ))}
@@ -208,9 +291,31 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
               value={formData.position_roles?.[0] || ''}
               label="Position Role"
               onChange={handlePositionChange}
+              sx={{
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'primary.main',
+                    boxShadow: '0 0 0 1px rgba(63, 81, 181, 0.2)',
+                  },
+                },
+                '&.Mui-focused': {
+                  transform: 'scale(1.02)',
+                },
+              }}
             >
               {POSITIONS.map((position) => (
-                <MenuItem key={position.value} value={position.value}>
+                <MenuItem 
+                  key={position.value} 
+                  value={position.value}
+                  sx={{
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(63, 81, 181, 0.1)',
+                      transform: 'translateX(4px)',
+                    },
+                  }}
+                >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography component="span" sx={{ fontSize: '1.2rem' }}>
                       {position.icon}
@@ -254,10 +359,28 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
                         background: 'rgba(255, 255, 255, 0.05)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        transform: 'translateY(0px)',
+                        animation: 'suggestionSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '@keyframes suggestionSlideIn': {
+                          '0%': {
+                            opacity: 0,
+                            transform: 'translateY(20px) scale(0.95)',
+                          },
+                          '100%': {
+                            opacity: 1,
+                            transform: 'translateY(0px) scale(1)',
+                          },
+                        },
                         '&:hover': {
                           background: 'rgba(255, 255, 255, 0.08)',
                           borderColor: 'primary.main',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0px) scale(0.98)',
+                          transition: 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)',
                         },
                       }}
                       onClick={() => applySuggestedPosition(index, suggestedPosition)}
@@ -278,6 +401,11 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
                                 backgroundColor: positionInfo?.color || 'grey.500',
                                 color: 'white',
                                 fontWeight: 500,
+                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '&:hover': {
+                                  transform: 'scale(1.1)',
+                                  boxShadow: `0 0 10px ${positionInfo?.color || 'grey'}`,
+                                },
                               }}
                             />
                           </Box>
@@ -295,45 +423,6 @@ export const PlayerSelectionStep: React.FC<PlayerSelectionStepProps> = ({
         </Box>
       )}
 
-      {/* Validation Summary */}
-      {formData.player_names?.length > 0 && (
-        <Alert
-          severity={
-            (() => {
-              const playerCount = formData.player_names.length;
-              const positions = formData.position_roles || [];
-              const emptyPositions = positions.filter((pos: string) => !pos || pos.trim() === '').length;
-              
-              if (positions.length === playerCount && emptyPositions === 0) {
-                return 'success';
-              } else if (positions.length === playerCount && emptyPositions > 0) {
-                return 'warning';
-              } else {
-                return 'info';
-              }
-            })()
-          }
-          sx={{ mt: 2 }}
-        >
-          {(() => {
-            const playerCount = formData.player_names.length;
-            const positions = formData.position_roles || [];
-            const emptyPositions = positions.filter((pos: string) => !pos || pos.trim() === '').length;
-            
-            // Only show validation messages if:
-            // 1. There are no empty positions (success case), OR
-            // 2. User has actually triggered validation errors through interaction
-            
-            if (positions.length === playerCount && emptyPositions === 0) {
-              return `Perfect! You have selected ${playerCount} players with all positions assigned.`;
-            } else if (positions.length === playerCount && emptyPositions > 0 && Boolean(errors.position_roles)) {
-              return `Please assign positions for ${emptyPositions} remaining player${emptyPositions > 1 ? 's' : ''}.`;
-            } else {
-              return `Select players above to assign their positions.`;
-            }
-          })()}
-        </Alert>
-      )}
     </Box>
   );
 };

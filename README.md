@@ -1,6 +1,6 @@
-# Outscaled2 - League of Legends Prediction Platform
+# Outscaled
 
-A full-stack web application for predicting League of Legends player performance using machine learning.
+A web app for predicting League of Legends player performance using machine learning.
 
 ## Testing
 

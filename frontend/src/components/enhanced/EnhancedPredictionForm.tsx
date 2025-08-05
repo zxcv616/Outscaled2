@@ -1,14 +1,11 @@
 import React, { useCallback } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   Button,
   useTheme,
   useMediaQuery,
-  Fab,
-  Zoom,
-  Container,
+  Paper,
 } from '@mui/material';
 import {
   RocketLaunch,
@@ -30,7 +27,7 @@ export const EnhancedPredictionForm: React.FC<EnhancedPredictionFormProps> = ({
   loading 
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
 
   const {
     formData,
@@ -47,176 +44,213 @@ export const EnhancedPredictionForm: React.FC<EnhancedPredictionFormProps> = ({
   }, [isFormComplete, submitForm, onSubmit]);
 
   return (
-    <Container maxWidth="lg" sx={{ position: 'relative' }}>
-      {/* Header */}
-      <Paper
-        elevation={2}
-        sx={{
-          p: 3,
-          mb: 3,
-          background: 'rgba(255, 255, 255, 0.03)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 3,
-          textAlign: 'center',
-        }}
-      >
+    <Box sx={{ position: 'relative' }}>
+      {/* Compact Header */}
+      <Box sx={{ mb: 1.5, textAlign: 'center' }}>
         <Typography
-          variant="h4"
-          gutterBottom
+          variant="h6"
           sx={{
-            fontWeight: 700,
-            background: 'linear-gradient(45deg, #3f51b5, #f50057)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            mb: 1,
+            fontWeight: 600,
+            color: 'text.primary',
+            mb: 0.25,
           }}
         >
-          Create Your Prediction
+          Create Prediction
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Select a player, set your prop, and get AI-powered predictions
+        <Typography variant="caption" color="text.secondary">
+          Configure your prediction across all steps
         </Typography>
-      </Paper>
-
-      {/* Form Content */}
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-        {/* Player & Position Selection */}
-        <Box sx={{ flex: 1 }}>
-          <Paper
-            elevation={8}
-            sx={{
-              p: 4,
-              background: 'rgba(26, 26, 26, 0.95)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: 3,
-              height: 'fit-content',
-            }}
-          >
-            <PlayerSelectionStep
-              formData={formData}
-              errors={errors}
-              onChange={updateFormData}
-            />
-          </Paper>
-        </Box>
-
-        {/* Match Details & Prop Configuration */}
-        <Box sx={{ flex: 1 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Match Details */}
-            <Paper
-              elevation={8}
-              sx={{
-                p: 4,
-                background: 'rgba(26, 26, 26, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: 3,
-              }}
-            >
-              <MatchDetailsStep
-                formData={formData}
-                errors={errors}
-                onChange={updateFormData}
-              />
-            </Paper>
-
-            {/* Prop Configuration */}
-            <Paper
-              elevation={8}
-              sx={{
-                p: 4,
-                background: 'rgba(26, 26, 26, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: 3,
-              }}
-            >
-              <PropConfigurationStep
-                formData={formData}
-                errors={errors}
-                onChange={updateFormData}
-              />
-            </Paper>
-          </Box>
-        </Box>
       </Box>
 
-      {/* Submit Button */}
-      <Paper
-        elevation={4}
-        sx={{
-          p: 3,
-          mt: 3,
-          background: 'rgba(255, 255, 255, 0.03)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 3,
-          textAlign: 'center',
-        }}
-      >
+      {/* Horizontal Side-by-Side Layout */}
+      <Box sx={{ 
+        display: isMobile ? 'flex' : 'grid',
+        flexDirection: isMobile ? 'column' : undefined,
+        gridTemplateColumns: isMobile ? undefined : '1fr 1fr 1fr',
+        gap: { xs: 1.5, lg: 2 },
+        mb: 1.5,
+      }}>
+        {/* Player Selection Column */}
+        <Paper 
+          elevation={2}
+          sx={{
+            p: { xs: 1.5, sm: 2, md: 2, lg: 2.5, xl: 3 },
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 2,
+            minHeight: { xs: 'auto', md: 350, lg: 400, xl: 450 },
+            position: 'relative',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              borderColor: 'rgba(63, 81, 181, 0.3)',
+              boxShadow: '0 4px 20px rgba(63, 81, 181, 0.1)',
+              transform: 'translateY(-2px)',
+            },
+          }}
+        >
+          <Box sx={{ 
+            borderBottom: '2px solid rgba(63, 81, 181, 0.3)',
+            pb: 1,
+            mb: 2,
+          }}>
+            <Typography variant="subtitle1" sx={{ 
+              fontWeight: 600,
+              color: 'primary.main',
+              textAlign: 'center'
+            }}>
+              ① Player & Position
+            </Typography>
+          </Box>
+          <PlayerSelectionStep
+            formData={formData}
+            errors={errors}
+            onChange={updateFormData}
+          />
+        </Paper>
+
+        {/* Match Details Column */}
+        <Paper 
+          elevation={2}
+          sx={{
+            p: { xs: 1.5, sm: 2, md: 2, lg: 2.5, xl: 3 },
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 2,
+            minHeight: { xs: 'auto', md: 350, lg: 400, xl: 450 },
+            position: 'relative',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              borderColor: 'rgba(245, 0, 87, 0.3)',
+              boxShadow: '0 4px 20px rgba(245, 0, 87, 0.1)',
+              transform: 'translateY(-2px)',
+            },
+          }}
+        >
+          <Box sx={{ 
+            borderBottom: '2px solid rgba(245, 0, 87, 0.3)',
+            pb: 1,
+            mb: 2,
+          }}>
+            <Typography variant="subtitle1" sx={{ 
+              fontWeight: 600,
+              color: 'secondary.main',
+              textAlign: 'center'
+            }}>
+              ② Match Details
+            </Typography>
+          </Box>
+          <MatchDetailsStep
+            formData={formData}
+            errors={errors}
+            onChange={updateFormData}
+          />
+        </Paper>
+
+        {/* Prop Configuration Column */}
+        <Paper 
+          elevation={2}
+          sx={{
+            p: { xs: 1.5, sm: 2, md: 2, lg: 2.5, xl: 3 },
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 2,
+            minHeight: { xs: 'auto', md: 350, lg: 400, xl: 450 },
+            position: 'relative',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              borderColor: 'rgba(76, 175, 80, 0.3)',
+              boxShadow: '0 4px 20px rgba(76, 175, 80, 0.1)',
+              transform: 'translateY(-2px)',
+            },
+          }}
+        >
+          <Box sx={{ 
+            borderBottom: '2px solid rgba(76, 175, 80, 0.3)',
+            pb: 1,
+            mb: 2,
+          }}>
+            <Typography variant="subtitle1" sx={{ 
+              fontWeight: 600,
+              color: 'success.main',
+              textAlign: 'center'
+            }}>
+              ③ Prop Configuration
+            </Typography>
+          </Box>
+          <PropConfigurationStep
+            formData={formData}
+            errors={errors}
+            onChange={updateFormData}
+          />
+        </Paper>
+      </Box>
+
+      {/* Centered Submit Button */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center',
+        mt: 1,
+        gap: 1,
+      }}>
         <Button
           onClick={handleSubmit}
           disabled={!isFormComplete() || loading}
-          endIcon={loading ? <AutoAwesome /> : <RocketLaunch />}
+          endIcon={loading ? 
+            <AutoAwesome sx={{
+              animation: 'spin 1s linear infinite',
+              '@keyframes spin': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
+            }} /> : 
+            <RocketLaunch />
+          }
           variant="contained"
           size="large"
           sx={{
-            px: 6,
-            py: 2,
+            px: 4,
+            py: 1.5,
             fontSize: '1.1rem',
             fontWeight: 600,
-            background: 'linear-gradient(45deg, #3f51b5, #f50057)',
+            background: loading ? 
+              'linear-gradient(45deg, #666, #999)' :
+              'linear-gradient(45deg, #3f51b5, #f50057)',
+            boxShadow: '0 4px 15px rgba(63, 81, 181, 0.4)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
-              background: 'linear-gradient(45deg, #303f9f, #c51162)',
+              background: loading ? 
+                'linear-gradient(45deg, #666, #999)' :
+                'linear-gradient(45deg, #303f9f, #c51162)',
+              boxShadow: '0 6px 20px rgba(63, 81, 181, 0.6)',
+              transform: 'translateY(-2px)',
             },
-            boxShadow: '0 8px 32px rgba(63, 81, 181, 0.3)',
             '&:disabled': {
               background: 'rgba(255, 255, 255, 0.1)',
               color: 'text.disabled',
+              boxShadow: 'none',
             },
           }}
         >
-          {loading ? 'Generating Prediction...' : 'Get AI Prediction'}
+          {loading ? 'Generating Prediction...' : 'Run'}
         </Button>
-        
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
-          sx={{ mt: 2 }}
-        >
-          {isFormComplete() 
-            ? 'All fields complete - ready to generate prediction!' 
-            : 'Please complete all required fields above'
-          }
-        </Typography>
-      </Paper>
 
-      {/* Mobile FAB for Quick Access */}
-      {isMobile && (
-        <Zoom in={isFormComplete()}>
-          <Fab
-            color="primary"
-            onClick={handleSubmit}
-            disabled={loading}
-            sx={{
-              position: 'fixed',
-              bottom: 24,
-              right: 24,
-              zIndex: 1000,
-              background: 'linear-gradient(45deg, #3f51b5, #f50057)',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #303f9f, #c51162)',
-              },
-            }}
-          >
-            <RocketLaunch />
-          </Fab>
-        </Zoom>
-      )}
-    </Container>
+        {/* Status indicator */}       
+        <Typography 
+          variant="caption" 
+          color={isFormComplete() ? 'success.main' : 'text.secondary'}
+          sx={{ 
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+            textAlign: 'center',
+          }}
+        >
+          {isFormComplete() ? '✓ Ready to generate!' : 'Complete all sections above'}
+        </Typography>
+      </Box>
+    </Box>
   );
 };

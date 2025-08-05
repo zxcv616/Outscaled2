@@ -16,3 +16,6 @@ code {
 * {
   box-sizing: border-box;
 }
+
+/* Import custom animations */
+@import './animations.css';

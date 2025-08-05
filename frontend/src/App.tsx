@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Box, Alert, Typography, Paper } from '@mui/material';
+import { Container, Box, Typography, Paper } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Header } from './components/Header';
@@ -26,23 +26,78 @@ const theme = createTheme({
       secondary: '#b0b0b0',
     },
   },
+  transitions: {
+    duration: {
+      shortest: 150,
+      shorter: 200,
+      short: 250,
+      standard: 300,
+      complex: 375,
+      enteringScreen: 225,
+      leavingScreen: 195,
+    },
+    easing: {
+      easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)',
+      easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
+      sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
+    },
+  },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontWeight: 700,
       fontSize: '2.5rem',
+      '@media (max-width:600px)': {
+        fontSize: '2rem',
+      },
     },
     h2: {
       fontWeight: 600,
       fontSize: '2rem',
+      '@media (max-width:600px)': {
+        fontSize: '1.5rem',
+      },
     },
     h3: {
       fontWeight: 600,
       fontSize: '1.75rem',
+      '@media (max-width:600px)': {
+        fontSize: '1.25rem',
+      },
+    },
+    h4: {
+      fontWeight: 600,
+      fontSize: '1.5rem',
+      '@media (max-width:600px)': {
+        fontSize: '1.125rem',
+      },
+    },
+    h5: {
+      fontWeight: 600,
+      fontSize: '1.25rem',
+      '@media (max-width:600px)': {
+        fontSize: '1rem',
+      },
     },
     h6: {
       fontWeight: 500,
       fontSize: '1.1rem',
+      '@media (max-width:600px)': {
+        fontSize: '0.95rem',
+      },
+    },
+    body1: {
+      fontSize: '1rem',
+      '@media (max-width:600px)': {
+        fontSize: '0.9rem',
+      },
+    },
+    body2: {
+      fontSize: '0.875rem',
+      '@media (max-width:600px)': {
+        fontSize: '0.8rem',
+      },
     },
   },
   shape: {
@@ -55,6 +110,11 @@ const theme = createTheme({
           backgroundImage: 'none',
           backdropFilter: 'blur(10px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            borderColor: 'rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          },
         },
       },
     },
@@ -64,7 +124,23 @@ const theme = createTheme({
           textTransform: 'none',
           fontWeight: 600,
           borderRadius: 8,
-          padding: '10px 24px',
+          padding: '12px 24px',
+          minHeight: '48px',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: 'translateY(0px)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          '&:hover': {
+            transform: 'translateY(-1px)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+          },
+          '&:active': {
+            transform: 'translateY(0px)',
+            transition: 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)',
+          },
+          '@media (max-width:600px)': {
+            padding: '14px 20px',
+            fontSize: '0.95rem',
+          },
         },
       },
     },
@@ -73,6 +149,41 @@ const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 8,
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+              },
+            },
+            '&.Mui-focused': {
+              transform: 'scale(1.02)',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderWidth: '2px',
+                boxShadow: '0 0 0 1px rgba(63, 81, 181, 0.2)',
+              },
+            },
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: 'translateY(0px)',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'scale(1.05)',
           },
         },
       },
@@ -135,97 +246,96 @@ function App() {
         <Box sx={{ position: 'relative', zIndex: 2 }}>
           <Header />
           
-          <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Box sx={{ mb: 6, textAlign: 'center' }}>
+          <Container maxWidth="xl" sx={{ 
+            py: 1,
+            animation: 'fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+            '@keyframes fadeInUp': {
+              '0%': {
+                opacity: 0,
+                transform: 'translateY(30px)',
+              },
+              '100%': {
+                opacity: 1,
+                transform: 'translateY(0px)',
+              },
+            },
+          }}>
+            <Box sx={{ 
+              mb: 1.5, 
+              textAlign: 'center',
+              animation: 'fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both',
+              '@keyframes fadeIn': {
+                '0%': { opacity: 0 },
+                '100%': { opacity: 1 },
+              },
+            }}>
               <Typography 
-                variant="h1" 
+                variant="h2" 
                 component="h1" 
-                gutterBottom 
                 sx={{ 
-                  fontWeight: 800,
+                  fontWeight: 700,
                   background: 'linear-gradient(45deg, #3f51b5, #f50057)',
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  mb: 2,
-                  textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                  mb: 0.5,
                 }}
               >
-                League of Legends
+                League of Legends Prop Predictions
               </Typography>
               <Typography 
-                variant="h2" 
-                component="h2" 
-                gutterBottom 
-                sx={{ 
-                  fontWeight: 700,
-                  color: 'text.primary',
-                  mb: 2,
-                }}
-              >
-                Prop Predictions
-              </Typography>
-              <Typography 
-                variant="h6" 
+                variant="body1" 
                 color="text.secondary" 
                 sx={{ 
                   maxWidth: 600,
                   mx: 'auto',
-                  lineHeight: 1.6,
+                  lineHeight: 1.5,
                   opacity: 0.9,
                 }}
               >
-                AI-powered predictions for kills and assists prop bets using real match data from professional League of Legends tournaments
+                AI-powered predictions for kills and assists prop bets using real match data
               </Typography>
             </Box>
 
-            <Paper 
-              elevation={24} 
-              sx={{ 
-                p: 4, 
-                mb: 4,
-                borderRadius: 3,
-                background: 'rgba(26, 26, 26, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-              }}
-            >
-              <EnhancedPredictionForm onSubmit={handlePrediction} loading={loading} />
-            </Paper>
-            
-            <EnhancedPredictionResult 
-              result={result} 
-              request={currentRequest}
-              loading={loading} 
-              error={error} 
-            />
-
-            {result && (
+            {/* Full Width Layout for Horizontal Form */}
+            <Box sx={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              alignItems: 'center',
+              width: '100%',
+            }}>
+              {/* Full Width Form */}
               <Paper 
                 elevation={8} 
                 sx={{ 
-                  mt: 3, 
-                  p: 3,
+                  p: { xs: 2, sm: 3, md: 4 }, 
                   borderRadius: 2,
-                  background: 'rgba(26, 26, 26, 0.9)',
-                  backdropFilter: 'blur(15px)',
+                  background: 'rgba(26, 26, 26, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  width: '100%',
+                  maxWidth: { xs: '100%', sm: '100%', md: '100%', lg: '1400px', xl: '1600px' },
                 }}
               >
-                <Alert 
-                  severity="info" 
-                  sx={{ 
-                    background: 'rgba(3, 169, 244, 0.1)',
-                    border: '1px solid rgba(3, 169, 244, 0.3)',
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                    <strong>Disclaimer:</strong> These predictions are for entertainment purposes only. 
-                    Always gamble responsibly and never bet more than you can afford to lose.
-                  </Typography>
-                </Alert>
+                <EnhancedPredictionForm onSubmit={handlePrediction} loading={loading} />
               </Paper>
-            )}
+              
+              {/* Results Section */}
+              <Box sx={{ 
+                width: '100%',
+                maxWidth: { xs: '100%', sm: '100%', md: '100%', lg: '1400px', xl: '1600px' },
+              }}>
+                <EnhancedPredictionResult 
+                  result={result} 
+                  request={currentRequest}
+                  loading={loading} 
+                  error={error} 
+                />
+              </Box>
+            </Box>
+
+            {/* Disclaimer - Now integrated into results */}
           </Container>
         </Box>
       </Box>

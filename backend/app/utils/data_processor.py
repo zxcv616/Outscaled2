@@ -425,6 +425,12 @@ class DataProcessor:
             'goldat10': 'sum',
             'xpat10': 'sum',
             'csat10': 'sum',
+            'golddiffat10': 'sum',
+            'xpdiffat10': 'sum',
+            'csdiffat10': 'sum',
+            'goldat15': 'sum',
+            'xpat15': 'sum',
+            'csat15': 'sum',
             'golddiffat15': 'sum',
             'xpdiffat15': 'sum',
             'csdiffat15': 'sum',
@@ -434,6 +440,9 @@ class DataProcessor:
             'goldat20': 'sum',
             'xpat20': 'sum',
             'csat20': 'sum',
+            'golddiffat20': 'sum',
+            'xpdiffat20': 'sum',
+            'csdiffat20': 'sum',
             'killsat20': 'sum',
             'assistsat20': 'sum',
             'deathsat20': 'sum'
@@ -451,6 +460,12 @@ class DataProcessor:
             'goldat10': 'mean',
             'xpat10': 'mean',
             'csat10': 'mean',
+            'golddiffat10': 'mean',
+            'xpdiffat10': 'mean',
+            'csdiffat10': 'mean',
+            'goldat15': 'mean',
+            'xpat15': 'mean',
+            'csat15': 'mean',
             'golddiffat15': 'mean',
             'xpdiffat15': 'mean',
             'csdiffat15': 'mean',
@@ -460,6 +475,9 @@ class DataProcessor:
             'goldat20': 'mean',
             'xpat20': 'mean',
             'csat20': 'mean',
+            'golddiffat20': 'mean',
+            'xpdiffat20': 'mean',
+            'csdiffat20': 'mean',
             'killsat20': 'mean',
             'assistsat20': 'mean',
             'deathsat20': 'mean'
@@ -482,14 +500,18 @@ class DataProcessor:
         
         CRITICAL: Features now reflect COMBINED stats across map ranges, not averages.
         This aligns with betting terminology where "Maps 1-2" means total performance.
+        
+        This method ensures consistency with the unified feature extraction in PredictionModel.
         """
+        if player_data.empty:
+            return self._get_default_features()
+        
         features = {}
         
         # Get aggregated stats (now uses combined/total logic)
         agg_stats = self.aggregate_stats(player_data, prop_type)
         
         # For simplicity, we'll use the first player's stats
-        # In practice, you'd handle multiple players differently
         player_name = player_data['playername'].iloc[0] if not player_data.empty else None
         if not player_name or player_name not in agg_stats:
             return self._get_default_features()
@@ -506,59 +528,83 @@ class DataProcessor:
         features['std_dev_' + prop_type] = features['std_dev_combined_' + prop_type]  # Backward compatibility
         features['maps_played'] = features['series_played']  # Backward compatibility (though it's really series)
         
-        # Long-term averages (need to calculate combined stats from full dataset for betting logic)
-        logger.info("Calculating long-term combined averages for betting context")
-        
-        # Get all data for this player and calculate combined stats per series
-        player_full_data = self.combined_data[self.combined_data['playername'] == player_name]
-        if not player_full_data.empty and 'match_series' in player_full_data.columns:
-            # Calculate combined stats per series for long-term average
-            longterm_series_totals = player_full_data.groupby('match_series')[prop_type].sum()
-            longterm_combined_avg = longterm_series_totals.mean()
-        else:
-            # Fallback to simple average if match_series not available
-            longterm_combined_avg = self.combined_data[self.combined_data['playername'] == player_name][prop_type].mean()
-        
+        # Long-term averages with proper calculation
+        longterm_combined_avg = self._calculate_longterm_combined_average(player_name, prop_type)
         features['longterm_combined_' + prop_type] = longterm_combined_avg
         features['longterm_' + prop_type + '_avg'] = longterm_combined_avg  # Backward compatibility
         
-        # Deviation metrics (now based on combined performance)
+        # Deviation metrics (now based on combined performance) with proper bounds checking
         recent_combined = features['combined_' + prop_type]
         longterm_combined = features['longterm_combined_' + prop_type]
         
         if longterm_combined > 0:
-            features['form_z_score'] = (recent_combined - longterm_combined) / max(features['std_dev_combined_' + prop_type], 0.1)
-            features['form_deviation_ratio'] = recent_combined / longterm_combined
+            std_dev = max(features['std_dev_combined_' + prop_type], 0.1)  # Prevent division by zero
+            features['form_z_score'] = (recent_combined - longterm_combined) / std_dev
+            features['form_deviation_ratio'] = std_dev / max(recent_combined, 0.1)  # Coefficient of variation
         else:
             features['form_z_score'] = 0
-            features['form_deviation_ratio'] = 1
+            features['form_deviation_ratio'] = 0.3  # Default volatility
         
         # Position information (no longer used for stat adjustment)
-        position = player_data['position'].iloc[0] if not player_data.empty else 'mid'
-        # Position factor is always 1.0 - no role-based expectation adjustments
-        # Role filtering should happen at the data level, not through stat multipliers
-        features['position_factor'] = 1.0
+        features['position_factor'] = 1.0  # Always neutral - no role-based expectation adjustments
         
-        # Quality/Volatility metrics
-        features['sample_size_score'] = min(features['maps_played'] / 10, 1.0)  # Normalize to 0-1
+        # Quality/Volatility metrics with proper normalization
+        features['sample_size_score'] = min(features['maps_played'] / 20.0, 1.0)  # Normalize to 0-1
         
-        # Additional performance metrics
-        features['avg_deaths'] = stats.get('deaths_mean', 0)
-        features['avg_damage'] = stats.get('damagetochampions_mean', 0)
-        features['avg_vision'] = stats.get('visionscore_mean', 0)
-        features['avg_cs'] = stats.get('total cs_mean', 0)
+        # Additional performance metrics with proper defaults
+        features['avg_deaths'] = stats.get('deaths_mean', 2.5)
+        features['avg_damage'] = stats.get('damagetochampions_mean', 18000)
+        features['avg_vision'] = stats.get('visionscore_mean', 40)
+        features['avg_cs'] = stats.get('total cs_mean', 250)
         
-        # Early game metrics
-        features['avg_gold_at_10'] = stats.get('goldat10_mean', 0)
-        features['avg_xp_at_10'] = stats.get('xpat10_mean', 0)
-        features['avg_cs_at_10'] = stats.get('csat10_mean', 0)
+        # Early game metrics with real CSV column calculations and proper fallbacks
+        features['avg_gold_at_10'] = stats.get('goldat10_mean', 8000)
+        features['avg_xp_at_10'] = stats.get('xpat10_mean', 6000)
+        features['avg_cs_at_10'] = stats.get('csat10_mean', 80)
+        features['avg_gold_diff_10'] = stats.get('golddiffat10_mean', 0)
+        features['avg_xp_diff_10'] = stats.get('xpdiffat10_mean', 0)
+        features['avg_cs_diff_10'] = stats.get('csdiffat10_mean', 0)
         
-        # Mid game metrics
+        # Mid game metrics with real CSV column calculations and proper fallbacks
+        features['avg_gold_at_15'] = stats.get('goldat15_mean', 12000)
+        features['avg_xp_at_15'] = stats.get('xpat15_mean', 9000)
+        features['avg_cs_at_15'] = stats.get('csat15_mean', 120)
         features['avg_gold_diff_15'] = stats.get('golddiffat15_mean', 0)
         features['avg_xp_diff_15'] = stats.get('xpdiffat15_mean', 0)
         features['avg_cs_diff_15'] = stats.get('csdiffat15_mean', 0)
         
+        # Late early game metrics (20 minutes) with real CSV column calculations
+        features['avg_gold_at_20'] = stats.get('goldat20_mean', 16000)
+        features['avg_xp_at_20'] = stats.get('xpat20_mean', 12000)
+        features['avg_cs_at_20'] = stats.get('csat20_mean', 160)
+        features['avg_gold_diff_20'] = stats.get('golddiffat20_mean', 0)
+        features['avg_xp_diff_20'] = stats.get('xpdiffat20_mean', 0)
+        features['avg_cs_diff_20'] = stats.get('csdiffat20_mean', 0)
+        
         return features
+    
+    def _calculate_longterm_combined_average(self, player_name: str, prop_type: str) -> float:
+        """Calculate long-term combined average with proper error handling"""
+        try:
+            # Get all data for this player and calculate combined stats per series
+            player_full_data = self.combined_data[self.combined_data['playername'] == player_name]
+            if not player_full_data.empty and 'match_series' in player_full_data.columns:
+                # Calculate combined stats per series for long-term average
+                longterm_series_totals = player_full_data.groupby('match_series')[prop_type].sum()
+                if len(longterm_series_totals) > 0:
+                    return longterm_series_totals.mean()
+            
+            # Fallback to simple average if match_series not available
+            player_stats = self.combined_data[self.combined_data['playername'] == player_name][prop_type]
+            if len(player_stats) > 0:
+                return player_stats.mean()
+            
+            # Final fallback to defaults
+            return 3.0 if prop_type == 'kills' else 5.0
+            
+        except Exception as e:
+            logger.error(f"Error calculating long-term average for {player_name}: {e}")
+            return 3.0 if prop_type == 'kills' else 5.0
     
     def _get_default_features(self) -> Dict[str, float]:
         """Return default features when no data is available (using betting logic naming)"""
@@ -576,7 +622,11 @@ class DataProcessor:
             'form_z_score': 0, 'form_deviation_ratio': 1, 'position_factor': 1.0,
             'sample_size_score': 0, 'avg_deaths': 0, 'avg_damage': 0, 'avg_vision': 0,
             'avg_cs': 0, 'avg_gold_at_10': 0, 'avg_xp_at_10': 0, 'avg_cs_at_10': 0,
-            'avg_gold_diff_15': 0, 'avg_xp_diff_15': 0, 'avg_cs_diff_15': 0
+            'avg_gold_diff_10': 0, 'avg_xp_diff_10': 0, 'avg_cs_diff_10': 0,
+            'avg_gold_at_15': 0, 'avg_xp_at_15': 0, 'avg_cs_at_15': 0,
+            'avg_gold_diff_15': 0, 'avg_xp_diff_15': 0, 'avg_cs_diff_15': 0,
+            'avg_gold_at_20': 0, 'avg_xp_at_20': 0, 'avg_cs_at_20': 0,
+            'avg_gold_diff_20': 0, 'avg_xp_diff_20': 0, 'avg_cs_diff_20': 0
         }
     
     def _infer_most_recent_team(self, player_name: str, match_date: str = None) -> str:

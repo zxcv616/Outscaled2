@@ -210,6 +210,34 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
         />
       </Box>
 
+      {/* Sample Size Validation Alert */}
+      {(result.sample_details?.sample_size || result.player_stats.maps_played) < 15 && (
+        <Paper sx={{ 
+          p: 2, 
+          mb: 3,
+          background: (result.sample_details?.sample_size || result.player_stats.maps_played) < 5 ? 
+            'rgba(244, 67, 54, 0.1)' : 'rgba(255, 152, 0, 0.1)',
+          border: `1px solid ${(result.sample_details?.sample_size || result.player_stats.maps_played) < 5 ? 
+            'rgba(244, 67, 54, 0.3)' : 'rgba(255, 152, 0, 0.3)'}`,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {(result.sample_details?.sample_size || result.player_stats.maps_played) < 5 ? 
+              <Error sx={{ mr: 1, color: 'error.main' }} /> : 
+              <Warning sx={{ mr: 1, color: 'warning.main' }} />
+            }
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {(result.sample_details?.sample_size || result.player_stats.maps_played) < 5 ? 
+                'Critical Sample Size Warning' : 'Small Sample Size Notice'}
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, ml: 4 }}>
+            {(result.sample_details?.sample_size || result.player_stats.maps_played) < 5 ? 
+              'Sample size below minimum threshold (5 maps) - prediction reliability severely impacted.' :
+              'Sample size below optimal threshold (15 maps) - consider predictions with caution.'}
+          </Typography>
+        </Paper>
+      )}
+
       {/* Core Metrics Row */}
       <Grid2 container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
         <Grid2 size={{ xs: 6, sm: 6, md: 3 }}>
@@ -324,6 +352,110 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
           </Card>
         </Grid2>
       </Grid2>
+
+      {/* Data Quality & Statistical Integrity Section */}
+      <Paper sx={{ 
+        p: 3, 
+        mb: 3,
+        background: 'rgba(255, 255, 255, 0.03)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+      }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+          <Psychology sx={{ mr: 1, color: 'secondary.main' }} />
+          Data Quality & Statistical Integrity
+        </Typography>
+        
+        <Grid2 container spacing={2}>
+          <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Sample Quality
+              </Typography>
+              <Chip 
+                label={result.sample_details?.data_quality || result.sample_details?.sample_quality || 'Good'}
+                color={
+                  (result.sample_details?.data_quality || result.sample_details?.sample_quality || 'Good').toLowerCase() === 'excellent' ? 'success' :
+                  (result.sample_details?.data_quality || result.sample_details?.sample_quality || 'Good').toLowerCase() === 'good' ? 'primary' :
+                  (result.sample_details?.data_quality || result.sample_details?.sample_quality || 'Good').toLowerCase() === 'fair' ? 'warning' : 'error'
+                }
+                sx={{ fontWeight: 600 }}
+              />
+              {/* Sample Size Validation Warning */}
+              {(result.sample_details?.sample_size || result.player_stats.maps_played) < 10 && (
+                <Box sx={{ mt: 1 }}>
+                  <Chip 
+                    icon={<Warning />}
+                    label="Small Sample"
+                    color="warning"
+                    size="small"
+                    sx={{ fontSize: '0.7rem' }}
+                  />
+                </Box>
+              )}
+              {(result.sample_details?.sample_size || result.player_stats.maps_played) < 5 && (
+                <Box sx={{ mt: 1 }}>
+                  <Chip 
+                    icon={<Error />}
+                    label="Critical Sample Size"
+                    color="error"
+                    size="small"
+                    sx={{ fontSize: '0.7rem' }}
+                  />
+                </Box>
+              )}
+            </Box>
+          </Grid2>
+          
+          <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Sample Size
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {result.sample_details?.sample_size || result.player_stats.maps_played} maps
+                {result.sample_details?.series_played && (
+                  <Typography variant="body2" color="text.secondary">
+                    ({result.sample_details.series_played} series)
+                  </Typography>
+                )}
+              </Typography>
+            </Box>
+          </Grid2>
+          
+          {result.temporal_calibration && (
+            <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Temporal Calibration
+                </Typography>
+                <Box>
+                  {result.temporal_calibration.patch_awareness && (
+                    <Chip 
+                      label="Patch-Aware" 
+                      size="small" 
+                      color="primary" 
+                      sx={{ mb: 0.5 }}
+                    />
+                  )}
+                  {result.temporal_calibration.needs_retraining && (
+                    <Chip 
+                      label="Retraining Needed" 
+                      size="small" 
+                      color="warning" 
+                      sx={{ mb: 0.5, ml: 0.5 }}
+                    />
+                  )}
+                  {result.sample_details?.patch_group && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      {result.sample_details.patch_group}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            </Grid2>
+          )}
+        </Grid2>
+      </Paper>
 
       {/* Quant-Grade Analytics Section */}
       <Accordion 
@@ -565,7 +697,17 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
                   <Typography variant="body2" color="text.secondary" sx={{
                 fontSize: { xs: '0.75rem', sm: '0.875rem' }
               }}>Confidence Method</Typography>
-                  <Typography variant="body1">{result.sample_details?.ci_method || 'Standard'}</Typography>
+                  <Typography variant="body1">
+                    {result.sample_details?.ci_method || 'bootstrap_percentile'}
+                    {result.temporal_calibration?.patch_awareness && (
+                      <Chip 
+                        label="Patch-Aware" 
+                        size="small" 
+                        color="primary" 
+                        sx={{ ml: 1, fontSize: '0.7rem' }}
+                      />
+                    )}
+                  </Typography>
                 </Box>
               </Grid2>
               <Grid2 size={{ xs: 12, md: 6 }}>
@@ -574,9 +716,12 @@ export const EnhancedPredictionResult: React.FC<EnhancedPredictionResultProps> =
                 fontSize: { xs: '0.75rem', sm: '0.875rem' }
               }}>Top Feature Drivers</Typography>
                   <Typography variant="body1">
-                    • Recent Performance (0.62)<br/>
-                    • Position Factor (0.21)<br/>
-                    • Opponent Meta (0.14)
+                    • Form Z-Score ({Math.abs(result.player_stats.form_z_score || 0).toFixed(2)})<br/>
+                    • Sample Quality ({result.sample_details?.sample_size || result.player_stats.maps_played || 0} maps)<br/>
+                    • Market Distance ({Math.abs(quantMetrics.propToExpectedRatio - 1).toFixed(3)}x)<br/>
+                    • Bootstrap Confidence ({result.confidence}%)<br/>
+                    {result.sample_details?.patch_group && `• Patch Grouping (${result.sample_details.patch_group})`}<br/>
+                    {result.temporal_calibration?.patch_awareness && '• Temporal Calibration (Active)'}
                   </Typography>
                 </Box>
               </Grid2>

@@ -4,10 +4,10 @@ Prediction Model for League of Legends
 
 <table>
   <tr>
-    <td><img width="300" alt="result" src="https://github.com/user-attachments/assets/04108bab-1641-4e40-8a97-32bdc66f3c52" /></td>
     <td><img width="300" alt="result1" src="https://github.com/user-attachments/assets/9577f828-7871-4cb6-84e7-9cfca385bd7b" /></td>
     <td><img width="300" alt="result4" src="https://github.com/user-attachments/assets/dd1a942c-98ea-42cd-8b8d-e73ff6cf1c27" /></td>
     <td><img width="300" alt="result3" src="https://github.com/user-attachments/assets/aa33c92c-1ba9-47d3-93a3-7eb02c300ce1" /></td>
+    <td><img width="300" alt="result" src="https://github.com/user-attachments/assets/04108bab-1641-4e40-8a97-32bdc66f3c52" /></td>
     <td><img width="300" alt="result2" src="https://github.com/user-attachments/assets/2fb64a58-9b38-4596-981d-6123eccdbc2c" /></td>
   </tr>
 </table>

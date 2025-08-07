@@ -1,6 +1,6 @@
 # Outscaled.GG
 
-Prediction Model for League of Legends
+Prediction Model for League of Legends. Not financial advice.
 
 <table>
   <tr>
@@ -150,15 +150,4 @@ Response:
 ```
 
 ---
-
-## Final Notes
-
-Outscaled.GG now operates with:
-- Statistically sound methodology
-- Smart series logic for tournament realism
-- Meta-aware, adaptive confidence
-- Real-world betting logic alignment
-- Transparent fallback handling
-
-It is designed for serious forecasting in the high-variance world of professional League of Legends esports.
 

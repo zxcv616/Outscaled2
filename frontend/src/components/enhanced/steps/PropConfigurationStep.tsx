@@ -7,25 +7,15 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Slider,
-  Card,
-  CardContent,
-  Alert,
   Chip,
   Stack,
-  Divider,
   Switch,
   FormControlLabel,
-  Tooltip,
 } from '@mui/material';
 import {
   TrendingUp,
   SportsEsports,
-  Info,
-  Settings,
   Analytics,
-  Add,
-  Help,
 } from '@mui/icons-material';
 
 interface PropConfigurationStepProps {
@@ -39,13 +29,6 @@ const PROP_TYPES = [
   { value: 'assists', label: 'Assists', icon: 'A', description: 'Team fight contributions' },
 ];
 
-const MAP_DESCRIPTIONS = {
-  1: 'Game 1 - Opening match',
-  2: 'Game 2 - Standard match',
-  3: 'Game 3 - Decisive match',
-  4: 'Game 4 - Extended series',
-  5: 'Game 5 - Final match',
-};
 
 export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
   formData,
@@ -91,11 +74,6 @@ export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
     onChange({ prop_value: value });
   };
 
-  const handlePropValueSliderChange = (event: Event, newValue: number | number[]) => {
-    const value = Array.isArray(newValue) ? newValue[0] : newValue;
-    setPropValueInput(value);
-    onChange({ prop_value: value });
-  };
 
   const handleMapRangeChange = (field: 'start' | 'end', value: number) => {
     const currentRange = formData.map_range || [1, 2];
@@ -115,29 +93,6 @@ export const PropConfigurationStep: React.FC<PropConfigurationStepProps> = ({
     onChange({ prop_value: value });
   };
 
-  const getConfidenceEstimate = () => {
-    // Simple heuristic for confidence estimation
-    const hasAllData = formData.player_names?.length > 0 && 
-                      formData.tournament && 
-                      formData.opponent && 
-                      formData.prop_value > 0;
-    
-    if (!hasAllData) return 'Incomplete data';
-    
-    const propValue = formData.prop_value || 0;
-    const propType = formData.prop_type || 'kills';
-    
-    // Rough confidence based on prop value reasonableness
-    if (propType === 'kills' && propValue >= 1 && propValue <= 6) {
-      return 'High confidence expected';
-    } else if (propType === 'assists' && propValue >= 2 && propValue <= 8) {
-      return 'High confidence expected';
-    } else if (propValue > 0 && propValue <= 15) {
-      return 'Medium confidence expected';
-    } else {
-      return 'Low confidence - unusual prop value';
-    }
-  };
 
   const currentPropType = PROP_TYPES.find(type => type.value === formData.prop_type);
   const mapRange = formData.map_range || [1, 2];

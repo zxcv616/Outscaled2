@@ -9,7 +9,8 @@ from .utils.data_processor import DataProcessor
 
 # Initialize global instances
 data_processor = DataProcessor()
-prediction_model = PredictionModel()
+# Skip model training at startup for faster development
+prediction_model = None
 
 app = FastAPI(
     title="Outscaled.GG Backend API",
@@ -84,6 +85,12 @@ async def predict_prop(request: PredictionRequest):
         raise HTTPException(status_code=400, detail="map_range must be [start, end] with start <= end")
     
     try:
+        # Initialize prediction model lazily when needed
+        global prediction_model
+        if prediction_model is None:
+            from .models.prediction_model import PredictionModel
+            prediction_model = PredictionModel()
+        
         # Process data and make prediction with tiered system
         features = data_processor.process_request(request, strict_mode=request.strict_mode)
         
@@ -182,6 +189,39 @@ async def check_data_availability(request: dict):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to check data availability: {str(e)}")
+
+@app.get("/debug/validate-betting-logic")
+async def validate_betting_logic(player_name: str = None):
+    """
+    CRITICAL DEBUG ENDPOINT: Validate Map 1-2 betting logic implementation.
+    Tests the complete flow: filter Maps 1-2 -> group by series_id -> sum within series -> calculate stats.
+    
+    Expected: For Map 1-2 betting, we should get combined stats per series, not averages.
+    Example: Series 1 (Map 1: 3 kills, Map 2: 5 kills) = 8 combined kills for that series.
+    """
+    try:
+        from app.utils.data_processor import DataProcessor
+        
+        dp = DataProcessor()
+        validation_result = dp.validate_betting_logic_implementation(player_name)
+        
+        return {
+            "message": "Map 1-2 betting logic validation completed",
+            "validation_result": validation_result,
+            "status": "success",
+            "explanation": {
+                "expected_behavior": "Map 1-2 should sum kills across both maps within each series, then calculate mean/std of those series totals",
+                "critical_fix": "Series-level aggregation ensures betting logic matches sportsbook rules",
+                "sample_calculation": "Series totals: [8, 10, 9] -> Expected: 9.0, Sample size: 3 series"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error in betting logic validation: {e}")
+        return {
+            "message": f"Validation failed: {str(e)}",
+            "status": "error",
+            "suggestion": "Check data loading and series identification logic"
+        }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000) 

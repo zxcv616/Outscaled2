@@ -13,8 +13,6 @@ Prediction Model for League of Legends
 </table>
 
 
-
-
 ## Model Design Overview
 
 Outscaled is designed for real-time, high-confidence forecasting of player performance metrics such as kills and assists. The model incorporates safe statistical practices, smart sample validation, and betting-context-aware feature engineering — with no artificial constraints or biases.

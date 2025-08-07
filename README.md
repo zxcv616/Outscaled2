@@ -3,7 +3,7 @@
 Prediction Model for League of Legends
 
 <p align="center">
-  <img src="results/result1.PNG" width="600" alt="Result 1">
+  <img width="1179" height="2556" alt="result" src="https://github.com/user-attachments/assets/04108bab-1641-4e40-8a97-32bdc66f3c52" />
   <br>
   <img src="results/result2.PNG" width="600" alt="Result 2">
   <br>
@@ -13,6 +13,8 @@ Prediction Model for League of Legends
   <br>
   <img src="results/result5.PNG" width="600" alt="Result 5">
 </p>
+<img width="1179" height="2556" alt="result" src="https://github.com/user-attachments/assets/04108bab-1641-4e40-8a97-32bdc66f3c52" />
+
 
 ## Model Design Overview
 

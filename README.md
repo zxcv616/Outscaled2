@@ -2,18 +2,16 @@
 
 Prediction Model for League of Legends
 
-<p align="center">
-  <img width="1179" height="2556" alt="result" src="https://github.com/user-attachments/assets/04108bab-1641-4e40-8a97-32bdc66f3c52" />
-  <br>
-  <img src="results/result2.PNG" width="600" alt="Result 2">
-  <br>
-  <img src="results/result3.PNG" width="600" alt="Result 3">
-  <br>
-  <img src="results/result4.PNG" width="600" alt="Result 4">
-  <br>
-  <img src="results/result5.PNG" width="600" alt="Result 5">
-</p>
-<img width="1179" height="2556" alt="result" src="https://github.com/user-attachments/assets/04108bab-1641-4e40-8a97-32bdc66f3c52" />
+<div style="display: flex; flex-direction: row; gap: 10px; overflow-x: auto;">
+  <img width="600" height="1300" alt="result" src="https://github.com/user-attachments/assets/04108bab-1641-4e40-8a97-32bdc66f3c52" />
+  <img width="600" height="1300" alt="result1" src="https://github.com/user-attachments/assets/9577f828-7871-4cb6-84e7-9cfca385bd7b" />
+  <img width="600" height="1300" alt="result4" src="https://github.com/user-attachments/assets/dd1a942c-98ea-42cd-8b8d-e73ff6cf1c27" />
+  <img width="600" height="1300" alt="result3" src="https://github.com/user-attachments/assets/aa33c92c-1ba9-47d3-93a3-7eb02c300ce1" />
+  <img width="600" height="1300" alt="result2" src="https://github.com/user-attachments/assets/2fb64a58-9b38-4596-981d-6123eccdbc2c" />
+</div>
+
+
+
 
 
 ## Model Design Overview

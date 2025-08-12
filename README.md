@@ -3,16 +3,13 @@
 Prediction Model for League of Legends
 
 <p align="center">
-  <img src="results/result1.PNG" width="600" alt="Result 1">
-  <br>
-  <img src="results/result2.PNG" width="600" alt="Result 2">
-  <br>
-  <img src="results/result3.PNG" width="600" alt="Result 3">
-  <br>
-  <img src="results/result4.PNG" width="600" alt="Result 4">
-  <br>
-  <img src="results/result5.PNG" width="600" alt="Result 5">
+  <img src="results/result1.PNG" width="220" alt="Result 1">
+  <img src="results/result2.PNG" width="220" alt="Result 2">
+  <img src="results/result3.PNG" width="220" alt="Result 3">
+  <img src="results/result4.PNG" width="220" alt="Result 4">
+  <img src="results/result5.PNG" width="220" alt="Result 5">
 </p>
+
 
 ## Model Design Overview
 

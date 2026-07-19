@@ -1,0 +1,728 @@
+{
+  "kills_maps_1_2": {
+    "empirical_nb": {
+      "n_predictions": 37927,
+      "base_over_rate": 0.466,
+      "brier": 0.2325,
+      "brier_coinflip": 0.25,
+      "log_loss": 0.6577,
+      "log_loss_coinflip": 0.6931,
+      "calibration": [
+        {
+          "bin": "0.00-0.30",
+          "n": 5442,
+          "predicted": 0.242,
+          "actual": 0.285
+        },
+        {
+          "bin": "0.30-0.40",
+          "n": 8982,
+          "predicted": 0.348,
+          "actual": 0.353
+        },
+        {
+          "bin": "0.40-0.45",
+          "n": 3585,
+          "predicted": 0.426,
+          "actual": 0.438
+        },
+        {
+          "bin": "0.45-0.50",
+          "n": 4545,
+          "predicted": 0.476,
+          "actual": 0.472
+        },
+        {
+          "bin": "0.50-0.55",
+          "n": 3682,
+          "predicted": 0.524,
+          "actual": 0.526
+        },
+        {
+          "bin": "0.55-0.60",
+          "n": 3284,
+          "predicted": 0.576,
+          "actual": 0.564
+        },
+        {
+          "bin": "0.60-0.70",
+          "n": 7038,
+          "predicted": 0.644,
+          "actual": 0.63
+        },
+        {
+          "bin": "0.70-1.00",
+          "n": 1369,
+          "predicted": 0.742,
+          "actual": 0.731
+        }
+      ],
+      "thresholds": [
+        {
+          "min_side_prob": 0.55,
+          "n_bets": 29700,
+          "hit_rate": 0.64
+        },
+        {
+          "min_side_prob": 0.6,
+          "n_bets": 22831,
+          "hit_rate": 0.663
+        },
+        {
+          "min_side_prob": 0.65,
+          "n_bets": 14499,
+          "hit_rate": 0.687
+        },
+        {
+          "min_side_prob": 0.7,
+          "n_bets": 6811,
+          "hit_rate": 0.718
+        }
+      ]
+    },
+    "empirical_nb_opp": {
+      "n_predictions": 37927,
+      "base_over_rate": 0.466,
+      "brier": 0.2281,
+      "brier_coinflip": 0.25,
+      "log_loss": 0.6486,
+      "log_loss_coinflip": 0.6931,
+      "calibration": [
+        {
+          "bin": "0.00-0.30",
+          "n": 7837,
+          "predicted": 0.221,
+          "actual": 0.27
+        },
+        {
+          "bin": "0.30-0.40",
+          "n": 7650,
+          "predicted": 0.35,
+          "actual": 0.374
+        },
+        {
+          "bin": "0.40-0.45",
+          "n": 3693,
+          "predicted": 0.425,
+          "actual": 0.434
+        },
+        {
+          "bin": "0.45-0.50",
+          "n": 4078,
+          "predicted": 0.475,
+          "actual": 0.486
+        },
+        {
+          "bin": "0.50-0.55",
+          "n": 3537,
+          "predicted": 0.525,
+          "actual": 0.536
+        },
+        {
+          "bin": "0.55-0.60",
+          "n": 3336,
+          "predicted": 0.575,
+          "actual": 0.579
+        },
+        {
+          "bin": "0.60-0.70",
+          "n": 5730,
+          "predicted": 0.644,
+          "actual": 0.653
+        },
+        {
+          "bin": "0.70-1.00",
+          "n": 2066,
+          "predicted": 0.756,
+          "actual": 0.741
+        }
+      ],
+      "thresholds": [
+        {
+          "min_side_prob": 0.55,
+          "n_bets": 30312,
+          "hit_rate": 0.653
+        },
+        {
+          "min_side_prob": 0.6,
+          "n_bets": 23283,
+          "hit_rate": 0.678
+        },
+        {
+          "min_side_prob": 0.65,
+          "n_bets": 16164,
+          "hit_rate": 0.704
+        },
+        {
+          "min_side_prob": 0.7,
+          "n_bets": 9903,
+          "hit_rate": 0.732
+        }
+      ]
+    },
+    "naive_normal": {
+      "n_predictions": 37927,
+      "base_over_rate": 0.466,
+      "brier": 0.2318,
+      "brier_coinflip": 0.25,
+      "log_loss": 0.6568,
+      "log_loss_coinflip": 0.6931,
+      "calibration": [
+        {
+          "bin": "0.00-0.30",
+          "n": 5466,
+          "predicted": 0.221,
+          "actual": 0.274
+        },
+        {
+          "bin": "0.30-0.40",
+          "n": 6085,
+          "predicted": 0.352,
+          "actual": 0.338
+        },
+        {
+          "bin": "0.40-0.45",
+          "n": 3441,
+          "predicted": 0.424,
+          "actual": 0.372
+        },
+        {
+          "bin": "0.45-0.50",
+          "n": 3590,
+          "predicted": 0.474,
+          "actual": 0.452
+        },
+        {
+          "bin": "0.50-0.55",
+          "n": 3866,
+          "predicted": 0.525,
+          "actual": 0.472
+        },
+        {
+          "bin": "0.55-0.60",
+          "n": 3867,
+          "predicted": 0.575,
+          "actual": 0.513
+        },
+        {
+          "bin": "0.60-0.70",
+          "n": 6551,
+          "predicted": 0.648,
+          "actual": 0.585
+        },
+        {
+          "bin": "0.70-1.00",
+          "n": 5061,
+          "predicted": 0.764,
+          "actual": 0.704
+        }
+      ],
+      "thresholds": [
+        {
+          "min_side_prob": 0.55,
+          "n_bets": 30471,
+          "hit_rate": 0.641
+        },
+        {
+          "min_side_prob": 0.6,
+          "n_bets": 23163,
+          "hit_rate": 0.664
+        },
+        {
+          "min_side_prob": 0.65,
+          "n_bets": 16498,
+          "hit_rate": 0.691
+        },
+        {
+          "min_side_prob": 0.7,
+          "n_bets": 10527,
+          "hit_rate": 0.715
+        }
+      ]
+    }
+  },
+  "kills_maps_1_1": {
+    "empirical_nb": {
+      "n_predictions": 55722,
+      "base_over_rate": 0.435,
+      "brier": 0.2295,
+      "brier_coinflip": 0.25,
+      "log_loss": 0.6515,
+      "log_loss_coinflip": 0.6931,
+      "calibration": [
+        {
+          "bin": "0.00-0.30",
+          "n": 11954,
+          "predicted": 0.229,
+          "actual": 0.267
+        },
+        {
+          "bin": "0.30-0.40",
+          "n": 12340,
+          "predicted": 0.347,
+          "actual": 0.35
+        },
+        {
+          "bin": "0.40-0.45",
+          "n": 5552,
+          "predicted": 0.426,
+          "actual": 0.436
+        },
+        {
+          "bin": "0.45-0.50",
+          "n": 6396,
+          "predicted": 0.475,
+          "actual": 0.466
+        },
+        {
+          "bin": "0.50-0.55",
+          "n": 5114,
+          "predicted": 0.524,
+          "actual": 0.518
+        },
+        {
+          "bin": "0.55-0.60",
+          "n": 5117,
+          "predicted": 0.575,
+          "actual": 0.555
+        },
+        {
+          "bin": "0.60-0.70",
+          "n": 8291,
+          "predicted": 0.64,
+          "actual": 0.619
+        },
+        {
+          "bin": "0.70-1.00",
+          "n": 958,
+          "predicted": 0.735,
+          "actual": 0.712
+        }
+      ],
+      "thresholds": [
+        {
+          "min_side_prob": 0.55,
+          "n_bets": 44212,
+          "hit_rate": 0.646
+        },
+        {
+          "min_side_prob": 0.6,
+          "n_bets": 33543,
+          "hit_rate": 0.674
+        },
+        {
+          "min_side_prob": 0.65,
+          "n_bets": 22650,
+          "hit_rate": 0.704
+        },
+        {
+          "min_side_prob": 0.7,
+          "n_bets": 12912,
+          "hit_rate": 0.732
+        }
+      ]
+    },
+    "empirical_nb_opp": {
+      "n_predictions": 55722,
+      "base_over_rate": 0.435,
+      "brier": 0.2276,
+      "brier_coinflip": 0.25,
+      "log_loss": 0.6477,
+      "log_loss_coinflip": 0.6931,
+      "calibration": [
+        {
+          "bin": "0.00-0.30",
+          "n": 13272,
+          "predicted": 0.218,
+          "actual": 0.258
+        },
+        {
+          "bin": "0.30-0.40",
+          "n": 11342,
+          "predicted": 0.349,
+          "actual": 0.357
+        },
+        {
+          "bin": "0.40-0.45",
+          "n": 5605,
+          "predicted": 0.426,
+          "actual": 0.436
+        },
+        {
+          "bin": "0.45-0.50",
+          "n": 6039,
+          "predicted": 0.475,
+          "actual": 0.474
+        },
+        {
+          "bin": "0.50-0.55",
+          "n": 5025,
+          "predicted": 0.525,
+          "actual": 0.52
+        },
+        {
+          "bin": "0.55-0.60",
+          "n": 5177,
+          "predicted": 0.575,
+          "actual": 0.56
+        },
+        {
+          "bin": "0.60-0.70",
+          "n": 8038,
+          "predicted": 0.64,
+          "actual": 0.628
+        },
+        {
+          "bin": "0.70-1.00",
+          "n": 1224,
+          "predicted": 0.741,
+          "actual": 0.708
+        }
+      ],
+      "thresholds": [
+        {
+          "min_side_prob": 0.55,
+          "n_bets": 44658,
+          "hit_rate": 0.652
+        },
+        {
+          "min_side_prob": 0.6,
+          "n_bets": 33876,
+          "hit_rate": 0.68
+        },
+        {
+          "min_side_prob": 0.65,
+          "n_bets": 23263,
+          "hit_rate": 0.709
+        },
+        {
+          "min_side_prob": 0.7,
+          "n_bets": 14496,
+          "hit_rate": 0.739
+        }
+      ]
+    },
+    "naive_normal": {
+      "n_predictions": 55722,
+      "base_over_rate": 0.435,
+      "brier": 0.2304,
+      "brier_coinflip": 0.25,
+      "log_loss": 0.6535,
+      "log_loss_coinflip": 0.6931,
+      "calibration": [
+        {
+          "bin": "0.00-0.30",
+          "n": 9769,
+          "predicted": 0.217,
+          "actual": 0.245
+        },
+        {
+          "bin": "0.30-0.40",
+          "n": 8761,
+          "predicted": 0.352,
+          "actual": 0.319
+        },
+        {
+          "bin": "0.40-0.45",
+          "n": 4913,
+          "predicted": 0.424,
+          "actual": 0.365
+        },
+        {
+          "bin": "0.45-0.50",
+          "n": 4852,
+          "predicted": 0.475,
+          "actual": 0.427
+        },
+        {
+          "bin": "0.50-0.55",
+          "n": 5438,
+          "predicted": 0.524,
+          "actual": 0.453
+        },
+        {
+          "bin": "0.55-0.60",
+          "n": 5703,
+          "predicted": 0.575,
+          "actual": 0.502
+        },
+        {
+          "bin": "0.60-0.70",
+          "n": 10634,
+          "predicted": 0.648,
+          "actual": 0.573
+        },
+        {
+          "bin": "0.70-1.00",
+          "n": 5652,
+          "predicted": 0.75,
+          "actual": 0.664
+        }
+      ],
+      "thresholds": [
+        {
+          "min_side_prob": 0.55,
+          "n_bets": 45432,
+          "hit_rate": 0.642
+        },
+        {
+          "min_side_prob": 0.6,
+          "n_bets": 34816,
+          "hit_rate": 0.666
+        },
+        {
+          "min_side_prob": 0.65,
+          "n_bets": 24434,
+          "hit_rate": 0.694
+        },
+        {
+          "min_side_prob": 0.7,
+          "n_bets": 15421,
+          "hit_rate": 0.722
+        }
+      ]
+    }
+  },
+  "assists_maps_1_2": {
+    "empirical_nb": {
+      "n_predictions": 42289,
+      "base_over_rate": 0.481,
+      "brier": 0.2338,
+      "brier_coinflip": 0.25,
+      "log_loss": 0.6603,
+      "log_loss_coinflip": 0.6931,
+      "calibration": [
+        {
+          "bin": "0.00-0.30",
+          "n": 3095,
+          "predicted": 0.261,
+          "actual": 0.297
+        },
+        {
+          "bin": "0.30-0.40",
+          "n": 10615,
+          "predicted": 0.348,
+          "actual": 0.344
+        },
+        {
+          "bin": "0.40-0.45",
+          "n": 3508,
+          "predicted": 0.426,
+          "actual": 0.428
+        },
+        {
+          "bin": "0.45-0.50",
+          "n": 5632,
+          "predicted": 0.477,
+          "actual": 0.457
+        },
+        {
+          "bin": "0.50-0.55",
+          "n": 4481,
+          "predicted": 0.522,
+          "actual": 0.526
+        },
+        {
+          "bin": "0.55-0.60",
+          "n": 3354,
+          "predicted": 0.576,
+          "actual": 0.561
+        },
+        {
+          "bin": "0.60-0.70",
+          "n": 9542,
+          "predicted": 0.647,
+          "actual": 0.626
+        },
+        {
+          "bin": "0.70-1.00",
+          "n": 2062,
+          "predicted": 0.741,
+          "actual": 0.721
+        }
+      ],
+      "thresholds": [
+        {
+          "min_side_prob": 0.55,
+          "n_bets": 32176,
+          "hit_rate": 0.637
+        },
+        {
+          "min_side_prob": 0.6,
+          "n_bets": 25314,
+          "hit_rate": 0.656
+        },
+        {
+          "min_side_prob": 0.65,
+          "n_bets": 15129,
+          "hit_rate": 0.682
+        },
+        {
+          "min_side_prob": 0.7,
+          "n_bets": 5157,
+          "hit_rate": 0.71
+        }
+      ]
+    },
+    "empirical_nb_opp": {
+      "n_predictions": 42289,
+      "base_over_rate": 0.481,
+      "brier": 0.2285,
+      "brier_coinflip": 0.25,
+      "log_loss": 0.6495,
+      "log_loss_coinflip": 0.6931,
+      "calibration": [
+        {
+          "bin": "0.00-0.30",
+          "n": 7612,
+          "predicted": 0.221,
+          "actual": 0.275
+        },
+        {
+          "bin": "0.30-0.40",
+          "n": 7918,
+          "predicted": 0.351,
+          "actual": 0.37
+        },
+        {
+          "bin": "0.40-0.45",
+          "n": 4188,
+          "predicted": 0.425,
+          "actual": 0.442
+        },
+        {
+          "bin": "0.45-0.50",
+          "n": 4437,
+          "predicted": 0.475,
+          "actual": 0.478
+        },
+        {
+          "bin": "0.50-0.55",
+          "n": 4102,
+          "predicted": 0.524,
+          "actual": 0.547
+        },
+        {
+          "bin": "0.55-0.60",
+          "n": 3823,
+          "predicted": 0.575,
+          "actual": 0.57
+        },
+        {
+          "bin": "0.60-0.70",
+          "n": 6844,
+          "predicted": 0.646,
+          "actual": 0.648
+        },
+        {
+          "bin": "0.70-1.00",
+          "n": 3365,
+          "predicted": 0.761,
+          "actual": 0.742
+        }
+      ],
+      "thresholds": [
+        {
+          "min_side_prob": 0.55,
+          "n_bets": 33750,
+          "hit_rate": 0.651
+        },
+        {
+          "min_side_prob": 0.6,
+          "n_bets": 25739,
+          "hit_rate": 0.678
+        },
+        {
+          "min_side_prob": 0.65,
+          "n_bets": 17727,
+          "hit_rate": 0.705
+        },
+        {
+          "min_side_prob": 0.7,
+          "n_bets": 10977,
+          "hit_rate": 0.731
+        }
+      ]
+    },
+    "naive_normal": {
+      "n_predictions": 42289,
+      "base_over_rate": 0.481,
+      "brier": 0.2332,
+      "brier_coinflip": 0.25,
+      "log_loss": 0.6591,
+      "log_loss_coinflip": 0.6931,
+      "calibration": [
+        {
+          "bin": "0.00-0.30",
+          "n": 5091,
+          "predicted": 0.234,
+          "actual": 0.273
+        },
+        {
+          "bin": "0.30-0.40",
+          "n": 6673,
+          "predicted": 0.352,
+          "actual": 0.355
+        },
+        {
+          "bin": "0.40-0.45",
+          "n": 3689,
+          "predicted": 0.426,
+          "actual": 0.399
+        },
+        {
+          "bin": "0.45-0.50",
+          "n": 3966,
+          "predicted": 0.475,
+          "actual": 0.429
+        },
+        {
+          "bin": "0.50-0.55",
+          "n": 4258,
+          "predicted": 0.524,
+          "actual": 0.487
+        },
+        {
+          "bin": "0.55-0.60",
+          "n": 4191,
+          "predicted": 0.575,
+          "actual": 0.518
+        },
+        {
+          "bin": "0.60-0.70",
+          "n": 7727,
+          "predicted": 0.649,
+          "actual": 0.578
+        },
+        {
+          "bin": "0.70-1.00",
+          "n": 6694,
+          "predicted": 0.77,
+          "actual": 0.703
+        }
+      ],
+      "thresholds": [
+        {
+          "min_side_prob": 0.55,
+          "n_bets": 34065,
+          "hit_rate": 0.633
+        },
+        {
+          "min_side_prob": 0.6,
+          "n_bets": 26185,
+          "hit_rate": 0.656
+        },
+        {
+          "min_side_prob": 0.65,
+          "n_bets": 18552,
+          "hit_rate": 0.682
+        },
+        {
+          "min_side_prob": 0.7,
+          "n_bets": 11785,
+          "hit_rate": 0.713
+        }
+      ]
+    }
+  }
+}

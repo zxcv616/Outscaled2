@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "props-dashboard",
+      "runtimeExecutable": "backend/venv/bin/uvicorn",
+      "runtimeArgs": ["--app-dir", "backend", "app.props.server:app", "--port", "8010"],
+      "port": 8010
+    }
+  ]
+}

@@ -1,24 +1,12 @@
 services:
-  backend:
+  app:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "8010:8010"
     volumes:
-      - ./backend:/app
-      - ./data:/app/data
+      - ./data:/data
+      - ./frontend/dist:/frontend/dist
     environment:
-      - ENV=production
+      - PROPS_DATA_DIR=/data
+      - PROPS_FRONTEND_DIST=/frontend/dist
     restart: unless-stopped
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - REACT_APP_API_URL=http://localhost:8000
-    depends_on:
-      - backend
-    restart: unless-stopped 

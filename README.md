@@ -1,162 +1,84 @@
 # Outscaled.GG
 
-Prediction Model for League of Legends
+Series-level player-prop prediction for League of Legends esports, with a live
+market-line paper-trading pipeline and dashboard.
 
-<p align="center">
-  <img src="results/result.PNG" width="220" alt="Result 1">
-  <img src="results/result1.PNG" width="220" alt="Result 2">
-  <img src="results/result2.PNG" width="220" alt="Result 3">
-  <img src="results/result3.PNG" width="220" alt="Result 4">
-  <img src="results/result4.PNG" width="220" alt="Result 5">
-</p>
+## How it works
 
+```
+Oracle's Elixir CSVs (data/)          Underdog LoL board (public API)
+        │                                      │
+        ▼                                      ▼
+  series identification              scripts/log_lines.py  ──►  data/lines/lines_log.csv
+  (day + team pair + game seq)                │                        │
+        │                                     ▼                        ▼
+        ▼                            model p_over vs payout    scripts/grade_lines.py
+  app/props/model.py                 break-even per line       (outcomes + track record)
+  recency-weighted empirical                                           │
+  + negative binomial blend,                                           ▼
+  opponent kill-env adjustment                              frontend dashboard (Board /
+                                                            Track record / Explorer)
+```
 
-## Model Design Overview
+- **Betting semantics** (see `Betting_Logic.md`): "Maps 1-2 kills 8.5" is graded
+  on the SUM of kills across games 1-2 of a series. One data point per series;
+  sample size counts series, never maps.
+- **Model** (`backend/app/props/model.py`): P(over) blends a recency-weighted
+  empirical distribution of the player's actual series totals (half-life 120
+  days) with a Negative Binomial fit to the weighted moments; the blend weight
+  grows with effective sample size. Optional opponent adjustment scales the
+  expected kill environment by how many kills the opponent allows vs. the
+  global average (dampened, clipped). Bootstrap CIs resample real series
+  totals. All calculations honor an `as_of` cutoff (leak-free).
 
-Outscaled is designed for real-time, high-confidence forecasting of player performance metrics such as kills and assists. The model incorporates safe statistical practices, smart sample validation, and betting-context-aware feature engineering — with no artificial constraints or biases.
+## Validation
 
----
+Walk-forward backtest on 2026 out-of-sample data (~136K graded predictions,
+lines at players' prior 35/50/65th percentiles):
 
-## Statistical Methodology
+| Config | Brier (coin flip .250) | Log loss (coin flip .693) |
+|---|---|---|
+| Kills, Maps 1-2 | .2281 | .6486 |
+| Kills, Map 1 | .2276 | .6477 |
+| Assists, Maps 1-2 | .2285 | .6495 |
 
-- **Bootstrap Confidence Intervals**: Predictions use bootstrap percentile confidence intervals (non-parametric) with quantile fallback for low samples. No gamma or normality assumptions are made.
-- **Safe Division**: All volatility, z-score, and confidence calculations use `safe_divide()` to prevent division-by-zero or NaNs.
-- **Sample Size Enforcement**:
-  - `< 5 maps`: fallback prediction only
-  - `5–9 maps`: quantile-based interval
-  - `10–14 maps`: bootstrap with warnings
-  - `15+ maps`: full feature activation and tight confidence
+Calibration holds within 1-2 points across the 0.35-0.75 range, stable every
+month of 2026. Reproduce with:
 
----
-
-## Betting Logic Integration
-
-- **Series Identification**:
-  - Uses `game_number == 1` as an anchor to define new series.
-  - Series grouped by team, date, and opponent context.
-  - Enforced validation: max 5 maps, same teams, sequential games only.
-- **No Role-Based Multipliers**:
-  - Position multipliers (e.g. `SUP = 0.85`) have been eliminated.
-  - All role-specific modeling is done through actual data only.
-- **Market Intelligence Features**:
-  - `market_distance` = `(expected_stat - implied_prop) / implied_prop`
-  - `market_confidence_score` reflects expected stat confidence near betting line
-  - No artificial class balance (e.g., 48% OVER targeting) is used.
-
----
-
-## Meta-Aware Confidence Calibration
-
-- **Patch Grouping**:
-  - Matches are grouped into 2-week rolling patch windows.
-  - Recency weighting applied to favor more recent data.
-- **Temporal Sliding Calibration**:
-  - Uses 2-month training / 1-month testing splits.
-  - Separate confidence calibrators are trained for each patch window.
-- **Confidence Decay Detection**:
-  - Log loss is monitored across windows.
-  - Triggers retraining if drift exceeds threshold.
-
----
-
-## Feature Engineering
-
-- `avg_kills`, `std_dev_kills`: Volatility-aware historical stats
-- `form_z_score`: Safe z-score against historical baseline
-- `maps_played`, `series_played`: Sample tracking and validation
-- `patch_recency_weight`: Scales recent patches higher
-- `market_distance`, `market_confidence_score`: Market-aware analysis
-- `sample_size_score`: Tiered sample quality metric
-
----
-
-## Safety & Validation
-
-- `safe_divide()` used for all ratio metrics.
-- Series groupings undergo structural validation before aggregation.
-- Sample quality tiers strictly enforced before prediction is allowed.
-- Fallback triggers are logged and transparent.
-
----
-
-## Model Architecture
-
-- **Base Model**: `RandomForestClassifier` (100 trees, max_depth=10)
-- **Confidence Calibration**: `TemporalConfidenceCalibrator` (custom implementation)
-- **Prediction Flow**:
-  1. Input features validated
-  2. Series grouped, meta weighted
-  3. Raw model prediction
-  4. Patch-aware confidence calibrated
-  5. Bootstrap CI and final prediction returned
-
----
-
-## Project Structure
-
-- `app/models/prediction_model.py`: Core inference logic
-- `app/models/temporal_calibration.py`: Temporal confidence calibration
-- `app/utils/data_processor.py`: Smart series logic, validation
-- `tests/`: Includes calibration + series validation test suites
-
----
-
-## Testing
-
-Run backend tests:
 ```bash
-cd backend
-python run_confidence_tests.py
-python -m pytest tests/test_temporal_calibration.py -v
-python -m pytest tests/test_betting_logic_validation.py -v
+cd backend && venv/bin/python -m app.props.backtest --data-dir ../data
 ```
 
----
+**Status: paper-trade mode.** Backtest lines are synthetic; the pipeline is now
+logging real Underdog lines daily and grading them. Real-money threshold: the
+>=6% edge bucket must hold a hit rate above ~58% over a few hundred graded
+picks (per-leg break-even on a 2-pick 3x entry is 57.7%).
 
-## API Example
+## Running
 
-Request:
-```json
-{
-  "player_names": ["Player1"],
-  "prop_type": "kills",
-  "prop_value": 4.5,
-  "map_range": [1, 2],
-  "opponent": "Team2",
-  "tournament": "LCS",
-  "match_date": "2025-08-04",
-  "position_roles": ["mid"]
-}
+```bash
+# dashboard (API + built frontend on one port)
+cd backend && venv/bin/uvicorn app.props.server:app --port 8010
+
+# frontend dev server (hot reload, proxies /api to :8010)
+cd frontend && npm install && npm run dev
+
+# one-off prediction
+cd backend && venv/bin/python scripts/props_predict.py \
+  --player Faker --prop kills --line 5.5 --maps 1-2 --opponent-team "Gen.G"
+
+# line logging / grading (cron runs these at 10:00+20:00 / 12:30 daily)
+backend/scripts/daily_lines.sh log
+backend/scripts/daily_lines.sh grade
 ```
 
-Response:
-```json
-{
-  "prediction": "OVER",
-  "confidence": 72.3,
-  "expected_stat": 5.2,
-  "confidence_interval": [4.1, 6.3],
-  "data_quality": "high",
-  "patch_group": "patch_14_12",
-  "confidence_warning": "",
-  "temporal_calibration": {
-    "calibration_method": "bootstrap_percentile",
-    "patch_awareness": true,
-    "needs_retraining": false
-  }
-}
-```
+Data: place Oracle's Elixir match-data CSVs in `data/` (gitignored; re-download
+the current-year file from oracleselixir.com to grade recent matches).
 
----
+## Layout
 
-## Final Notes
-
-Outscaled.GG now operates with:
-- Statistically sound methodology
-- Smart series logic for tournament realism
-- Meta-aware, adaptive confidence
-- Real-world betting logic alignment
-- Transparent fallback handling
-
-It is designed for serious forecasting in the high-variance world of professional League of Legends esports.
-
+- `backend/app/props/` — data loading + series identification, model, backtest,
+  line ingestion (Underdog API; PrizePicks via captured JSON), FastAPI server
+- `backend/scripts/` — prediction CLI, line logger, grader, daily cron wrapper
+- `frontend/` — Vite + React + TS dashboard (Board / Track record / Explorer)
+- `data/lines/` — logged market lines with frozen model predictions, graded results

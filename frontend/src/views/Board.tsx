@@ -71,10 +71,11 @@ export default function Board() {
       </div>
 
       <div className="card">
-        <h3>Today's board</h3>
+        <h3>Upcoming lines</h3>
         <div className="sub">
-          Model probability vs payout break-even. Paper-trade only — edges are
-          unvalidated until the track record fills in.
+          Latest snapshot of each line for games that haven't started; past
+          games move to the Track record. "vs Book" is how much likelier the
+          model thinks our side is than the book's own no-vig probability.
         </div>
         <div className="controls">
           <label className="field">
@@ -108,8 +109,10 @@ export default function Board() {
                 <th>Prop</th>
                 <th className="num">Line</th>
                 <th className="num">Model p</th>
+                <th className="num">Book p</th>
                 <th className="num">Break-even</th>
                 <th className="num">Edge</th>
+                <th className="num">vs Book</th>
                 <th className="num">Exp</th>
                 <th className="num">n</th>
                 <th className="num">Opp ×</th>
@@ -122,6 +125,12 @@ export default function Board() {
                 const over = l.best_side === "OVER";
                 const pSide =
                   l.p_over == null ? null : over ? l.p_over : 1 - l.p_over;
+                const bookSide =
+                  l.book_p_over == null
+                    ? null
+                    : over
+                      ? l.book_p_over
+                      : 1 - l.book_p_over;
                 const be = over ? l.breakeven_over : l.breakeven_under;
                 const edge = l.best_edge ?? 0;
                 return (
@@ -140,6 +149,7 @@ export default function Board() {
                     </td>
                     <td className="num">{l.line}</td>
                     <td className="num">{pct(pSide)}</td>
+                    <td className="num muted">{pct(bookSide)}</td>
                     <td className="num muted">{pct(be)}</td>
                     <td className="num">
                       <span className="edge-cell">
@@ -154,6 +164,17 @@ export default function Board() {
                           {edge >= 0 ? "+" : ""}
                           {pct(edge)}
                         </span>
+                      </span>
+                    </td>
+                    <td className="num">
+                      <span
+                        className={
+                          (l.edge_vs_book ?? 0) >= 0.03 ? "edge-pos" : "edge-neg"
+                        }
+                      >
+                        {l.edge_vs_book == null
+                          ? "—"
+                          : `${l.edge_vs_book >= 0 ? "+" : ""}${pct(l.edge_vs_book)}`}
                       </span>
                     </td>
                     <td className="num">{l.expected_stat}</td>

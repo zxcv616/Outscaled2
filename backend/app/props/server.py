@@ -156,34 +156,82 @@ def predict(
     return out
 
 
+BOARD_COLS = [
+    "player_name", "matched_player", "own_team", "team_ok", "prop_type",
+    "map_lo", "map_hi", "line", "payout_over", "payout_under", "book_p_over",
+    "game_time", "match_title", "p_over", "expected_stat", "n_series",
+    "opponent_factor", "breakeven_over", "breakeven_under", "edge_over",
+    "edge_under", "best_side", "best_edge", "edge_vs_book", "snapshot_ts",
+]
+
+
+def _deduped_log() -> pd.DataFrame | None:
+    """Line log with one row per line: the most recent snapshot of it."""
+    if not os.path.exists(LINES_LOG):
+        return None
+    log = pd.read_csv(LINES_LOG)
+    for col in BOARD_COLS:
+        if col not in log.columns:
+            log[col] = np.nan
+    log = log.sort_values("snapshot_ts").groupby(["source", "line_id"]).tail(1)
+    log["game_dt"] = pd.to_datetime(log["game_time"], errors="coerce", utc=True)
+    return log
+
+
 @app.get("/api/board")
 def board():
-    if not os.path.exists(LINES_LOG):
-        return {"snapshot_ts": None, "lines": []}
-    log = pd.read_csv(LINES_LOG)
+    """Upcoming lines only - past games roll off to the Track Record."""
+    log = _deduped_log()
+    if log is None or log.empty:
+        return {"snapshot_ts": None, "n_lines": 0, "lines": []}
+    now = pd.Timestamp.now(tz="UTC")
+    upcoming = log[log["game_dt"].isna() | (log["game_dt"] >= now)].copy()
     latest_ts = log["snapshot_ts"].max()
-    snap = log[log["snapshot_ts"] == latest_ts].copy()
-    snap = snap.replace({np.nan: None})
-    keep = [
-        "player_name", "matched_player", "own_team", "team_ok", "prop_type", "map_lo", "map_hi",
-        "line", "payout_over", "payout_under", "game_time", "match_title",
-        "p_over", "expected_stat", "n_series", "opponent_factor",
-        "breakeven_over", "breakeven_under", "edge_over", "edge_under",
-        "best_side", "best_edge",
-    ]
-    lines = snap[keep].to_dict("records")
+    lines = upcoming[BOARD_COLS].replace({np.nan: None}).to_dict("records")
     lines.sort(key=lambda r: (r["best_edge"] is None, -(r["best_edge"] or 0)))
     return {"snapshot_ts": latest_ts, "n_lines": len(lines), "lines": lines}
 
 
+PENDING_COLS = [
+    "matched_player", "prop_type", "map_lo", "map_hi", "line", "best_side",
+    "best_edge", "edge_vs_book", "p_over", "book_p_over", "game_time", "match_title",
+]
+
+
+def _pending() -> list[dict]:
+    """Past-game lines awaiting an outcome (grader hasn't matched them yet)."""
+    log = _deduped_log()
+    if log is None or log.empty:
+        return []
+    now = pd.Timestamp.now(tz="UTC")
+    past = log[
+        (log["game_dt"] < now) & log["matched_player"].notna() & log["p_over"].notna()
+    ].copy()
+    if past.empty:
+        return []
+    if os.path.exists(LINES_GRADED):
+        graded = pd.read_csv(LINES_GRADED)
+        graded_ids = set(
+            graded.loc[graded["outcome_over"].notna(), "line_id"]
+        )
+        past = past[~past["line_id"].isin(graded_ids)]
+    past = past.sort_values("game_dt", ascending=False).head(100)
+    return past[PENDING_COLS].replace({np.nan: None}).to_dict("records")
+
+
 @app.get("/api/performance")
 def performance():
+    pending = _pending()
+    empty = {
+        "n_graded": 0, "n_pending": len(pending), "pending": pending,
+        "buckets": [], "calibration": [], "recent": [],
+    }
     if not os.path.exists(LINES_GRADED):
-        return {"n_graded": 0, "buckets": [], "calibration": [], "recent": []}
+        return empty
     g = pd.read_csv(LINES_GRADED)
     done = g[g["outcome_over"].notna() & g["p_over"].notna()].copy()
     if done.empty:
-        return {"n_graded": 0, "buckets": [], "calibration": [], "recent": []}
+        return empty
 
     done = done.sort_values("snapshot_ts").groupby(["source", "line_id"]).tail(1)
     p = done["p_over"].to_numpy(dtype=float)
@@ -217,16 +265,21 @@ def performance():
             )
 
     recent = done.sort_values("game_time", ascending=False).head(50)
+    if "edge_vs_book" not in recent.columns:
+        recent["edge_vs_book"] = np.nan
     recent = recent.replace({np.nan: None})
     return {
         "n_graded": int(len(done)),
+        "n_pending": len(pending),
+        "pending": pending,
         "brier": round(float(np.mean((p - y) ** 2)), 4),
         "overall_hit_rate": round(float(done["side_hit"].mean()), 3),
         "buckets": buckets,
         "calibration": calibration,
         "recent": recent[
             ["matched_player", "prop_type", "map_lo", "map_hi", "line", "best_side",
-             "best_edge", "p_over", "actual_total", "outcome_over", "game_time"]
+             "best_edge", "edge_vs_book", "p_over", "actual_total", "outcome_over",
+             "game_time"]
         ].to_dict("records"),
     }
 

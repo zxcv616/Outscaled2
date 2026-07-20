@@ -35,9 +35,65 @@ export default function Performance() {
   if (error) return <div className="error">Performance unavailable: {error}</div>;
   if (!data) return <div className="muted">Loading…</div>;
 
+  const pendingCard = data.n_pending > 0 && (
+    <div className="card">
+      <h3>Pending grading ({data.n_pending})</h3>
+      <div className="sub">
+        Games played, outcome not yet graded — refresh the Oracle's Elixir CSV
+        in <code>data/</code> and the 12:30 grading run scores these.
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Prop</th>
+              <th className="num">Line</th>
+              <th>Side</th>
+              <th className="num">Edge</th>
+              <th className="num">vs Book</th>
+              <th className="num">Model p(side)</th>
+              <th>Match</th>
+              <th>Game</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.pending.map((r, i) => {
+              const over = r.best_side === "OVER";
+              const pSide =
+                r.p_over == null ? null : over ? r.p_over : 1 - r.p_over;
+              return (
+                <tr key={i}>
+                  <td>{r.matched_player}</td>
+                  <td>
+                    {r.prop_type} {r.map_lo}-{r.map_hi}
+                  </td>
+                  <td className="num">{r.line}</td>
+                  <td>
+                    <span className={`chip ${over ? "over" : "under"}`}>
+                      {r.best_side ?? "—"}
+                    </span>
+                  </td>
+                  <td className="num">{pct(r.best_edge)}</td>
+                  <td className="num muted">
+                    {r.edge_vs_book == null ? "—" : pct(r.edge_vs_book)}
+                  </td>
+                  <td className="num">{pct(pSide)}</td>
+                  <td className="muted">{r.match_title}</td>
+                  <td className="muted">{r.game_time?.slice(0, 10)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   if (data.n_graded === 0)
     return (
       <div className="grid">
+        {pendingCard}
         <div className="empty">
           <p style={{ fontSize: 16, color: "#c3c2b7" }}>
             No graded picks yet — the track record builds itself.
@@ -74,7 +130,13 @@ export default function Performance() {
           <div className="value">{data.brier}</div>
           <div className="hint">coin flip = 0.250, lower is better</div>
         </div>
+        <div className="tile">
+          <div className="label">Pending grading</div>
+          <div className="value">{data.n_pending}</div>
+          <div className="hint">awaiting outcome data</div>
+        </div>
       </div>
+      {pendingCard}
 
       <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
         <div className="card">

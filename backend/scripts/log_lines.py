@@ -140,17 +140,22 @@ def main():
     parser.add_argument("--data-dir", default="../data")
     parser.add_argument("--out", default="../data/lines/lines_log.csv")
     parser.add_argument("--pp-file", default=None, help="captured PrizePicks JSON")
+    parser.add_argument("--ud-file", default=None, help="captured Underdog JSON (instead of live fetch)")
     parser.add_argument("--min-edge", type=float, default=0.03,
                         help="edge threshold for the printed picks table")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
-    board = (
-        parse_prizepicks_file(args.pp_file)
-        if args.pp_file
-        else parse_underdog(fetch_underdog_lol())
-    )
+    if args.pp_file:
+        board = parse_prizepicks_file(args.pp_file)
+    elif args.ud_file:
+        import json
+
+        with open(args.ud_file) as f:
+            board = parse_underdog(json.load(f))
+    else:
+        board = parse_underdog(fetch_underdog_lol())
     if board.empty:
         logger.warning("No prop lines on the board - nothing to log")
         return
@@ -184,6 +189,7 @@ def main():
                 "breakeven_under": breakeven_probability(row.payout_under),
                 "edge_over": np.nan, "edge_under": np.nan,
                 "best_side": None, "best_edge": np.nan,
+                "edge_vs_book": np.nan,
             }
         )
         if key not in player_index.index:
@@ -207,6 +213,14 @@ def main():
         edge_over = pred.p_over - rec["breakeven_over"]
         edge_under = (1.0 - pred.p_over) - rec["breakeven_under"]
         best_side = "OVER" if edge_over >= edge_under else "UNDER"
+        # Disagreement with the book's no-vig probability, signed toward our
+        # chosen side: positive = we think our side is likelier than the book does.
+        book_p = getattr(row, "book_p_over", np.nan)
+        if np.isfinite(book_p):
+            disagreement = pred.p_over - book_p
+            rec["edge_vs_book"] = round(
+                disagreement if best_side == "OVER" else -disagreement, 4
+            )
         rec.update(
             {
                 "matched_player": info["playername"],
@@ -263,11 +277,15 @@ def main():
         maps = f"{p.map_lo}-{p.map_hi}"
         p_side = p.p_over if p.best_side == "OVER" else 1 - p.p_over
         be = p.breakeven_over if p.best_side == "OVER" else p.breakeven_under
+        vs_book = (
+            f" | vs book {p.edge_vs_book:+.1%}"
+            if np.isfinite(getattr(p, "edge_vs_book", np.nan)) else ""
+        )
         print(
             f"  {p.best_side:<5} {p.matched_player:<14} {p.prop_type:<8} maps {maps} "
             f"line {p.line:<5} | model p={p_side:.3f} vs breakeven {be:.3f} "
-            f"(edge {p.best_edge:+.1%}) | exp {p.expected_stat} n={p.n_series:.0f} "
-            f"oppf={p.opponent_factor} | {p.match_title}"
+            f"(edge {p.best_edge:+.1%}){vs_book} | exp {p.expected_stat} "
+            f"n={p.n_series:.0f} oppf={p.opponent_factor} | {p.match_title}"
         )
 
 

@@ -9,6 +9,7 @@ export interface BoardLine {
   line: number;
   payout_over: number | null;
   payout_under: number | null;
+  book_p_over: number | null;
   game_time: string | null;
   match_title: string | null;
   p_over: number | null;
@@ -21,6 +22,8 @@ export interface BoardLine {
   edge_under: number | null;
   best_side: "OVER" | "UNDER" | null;
   best_edge: number | null;
+  edge_vs_book: number | null;
+  snapshot_ts: string | null;
 }
 
 export interface BoardResponse {
@@ -50,14 +53,32 @@ export interface GradedPick {
   line: number;
   best_side: string;
   best_edge: number | null;
+  edge_vs_book: number | null;
   p_over: number;
   actual_total: number;
   outcome_over: number;
   game_time: string;
 }
 
+export interface PendingPick {
+  matched_player: string;
+  prop_type: string;
+  map_lo: number;
+  map_hi: number;
+  line: number;
+  best_side: string | null;
+  best_edge: number | null;
+  edge_vs_book: number | null;
+  p_over: number | null;
+  book_p_over: number | null;
+  game_time: string | null;
+  match_title: string | null;
+}
+
 export interface PerformanceResponse {
   n_graded: number;
+  n_pending: number;
+  pending: PendingPick[];
   brier?: number;
   overall_hit_rate?: number;
   buckets: EdgeBucket[];

@@ -76,10 +76,12 @@ def parse_underdog(raw: dict, snapshot_ts: str | None = None) -> pd.DataFrame:
 
         game = games.get(app.get("match_id"), {})
         payout = {"higher": np.nan, "lower": np.nan}
+        american = {"higher": np.nan, "lower": np.nan}
         for opt in line.get("options", []):
             choice = opt.get("choice")
             if choice in payout:
                 payout[choice] = float(opt.get("payout_multiplier") or np.nan)
+                american[choice] = _to_float(opt.get("american_price"))
 
         rows.append(
             {
@@ -93,6 +95,9 @@ def parse_underdog(raw: dict, snapshot_ts: str | None = None) -> pd.DataFrame:
                 "line": float(line.get("stat_value")),
                 "payout_over": payout["higher"],
                 "payout_under": payout["lower"],
+                "american_over": american["higher"],
+                "american_under": american["lower"],
+                "book_p_over": novig_p_over(american["higher"], american["lower"]),
                 "game_time": game.get("scheduled_at"),
                 "match_title": game.get("title"),
                 "status": line.get("status"),
@@ -101,6 +106,29 @@ def parse_underdog(raw: dict, snapshot_ts: str | None = None) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     logger.info("Parsed %s prop lines from Underdog board", len(df))
     return df
+
+
+def _to_float(x) -> float:
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return float("nan")
+
+
+def _implied(american: float) -> float:
+    """Implied probability (vig included) from an American price."""
+    if not np.isfinite(american) or american == 0:
+        return float("nan")
+    return -american / (-american + 100) if american < 0 else 100 / (american + 100)
+
+
+def novig_p_over(american_over: float, american_under: float) -> float:
+    """The book's own P(over) with the vig removed - both sides' implied
+    probabilities, renormalized to sum to 1."""
+    p_o, p_u = _implied(american_over), _implied(american_under)
+    if not (np.isfinite(p_o) and np.isfinite(p_u)) or p_o + p_u <= 0:
+        return float("nan")
+    return float(p_o / (p_o + p_u))
 
 
 def parse_prizepicks_file(path: str, snapshot_ts: str | None = None) -> pd.DataFrame:
@@ -145,6 +173,9 @@ def parse_prizepicks_file(path: str, snapshot_ts: str | None = None) -> pd.DataF
                 "line": float(attrs.get("line_score")),
                 "payout_over": 1.0,  # standard flex/power legs
                 "payout_under": 1.0,
+                "american_over": float("nan"),  # PrizePicks publishes no odds
+                "american_under": float("nan"),
+                "book_p_over": float("nan"),
                 "game_time": attrs.get("start_time"),
                 "match_title": attrs.get("description", ""),
                 "status": attrs.get("status", ""),

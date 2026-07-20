@@ -99,6 +99,7 @@ def predict(
     prop: str = "kills",
     maps: str = "1-2",
     opponent_team: str | None = None,
+    position: str | None = None,
 ):
     lo, hi = _parse_maps(maps)
     model = get_model(prop, lo, hi)
@@ -111,19 +112,27 @@ def predict(
         if not match.empty:
             opponent_teamid = match["teamid"].iloc[-1]
 
-    pred = model.predict(player, line, opponent_teamid=opponent_teamid)
+    pred = model.predict(
+        player, line, opponent_teamid=opponent_teamid, position=position
+    )
     if pred is None:
         raise HTTPException(
             404,
-            f"Insufficient history for {player} ({prop} maps {maps}): "
-            f"need {MIN_SERIES_FOR_PREDICTION}+ series",
+            f"Insufficient history for {player} ({prop} maps {maps}, "
+            f"position={position or 'any'}): need {MIN_SERIES_FOR_PREDICTION}+ series",
         )
 
+    # History for the charts, filtered the same way as the prediction sample.
     hist = model._players[player]
-    order = np.argsort(hist.dates)
+    mask = (
+        hist.positions == position if position is not None
+        else np.ones(len(hist.dates), dtype=bool)
+    )
+    order = np.argsort(hist.dates[mask])
+    dates, totals = hist.dates[mask][order], hist.totals[mask][order]
     history = [
-        {"date": str(pd.Timestamp(hist.dates[i]).date()), "total": float(hist.totals[i])}
-        for i in order
+        {"date": str(pd.Timestamp(d).date()), "total": float(t)}
+        for d, t in zip(dates, totals)
     ]
 
     # Probability curve across nearby lines.
@@ -132,7 +141,10 @@ def predict(
         alt = line + offset
         if alt < 0.5:
             continue
-        p = model.predict(player, alt, opponent_teamid=opponent_teamid, n_bootstrap=0)
+        p = model.predict(
+            player, alt, opponent_teamid=opponent_teamid,
+            position=position, n_bootstrap=0,
+        )
         if p:
             curve.append({"line": alt, "p_over": round(p.p_over, 4)})
 

@@ -111,11 +111,13 @@ export const fetchPredict = (p: {
   prop: string;
   maps: string;
   opponentTeam?: string;
+  position?: string;
 }) =>
   get<PredictResponse>(
     `/api/predict?player=${encodeURIComponent(p.player)}&line=${p.line}` +
       `&prop=${p.prop}&maps=${p.maps}` +
-      (p.opponentTeam ? `&opponent_team=${encodeURIComponent(p.opponentTeam)}` : "")
+      (p.opponentTeam ? `&opponent_team=${encodeURIComponent(p.opponentTeam)}` : "") +
+      (p.position ? `&position=${encodeURIComponent(p.position)}` : "")
   );
 
 export const pct = (x: number | null | undefined, digits = 1) =>

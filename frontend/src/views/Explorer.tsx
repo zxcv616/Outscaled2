@@ -36,6 +36,7 @@ export default function Explorer() {
   const [hits, setHits] = useState<PlayerHit[]>([]);
   const [showDrop, setShowDrop] = useState(false);
   const [player, setPlayer] = useState("");
+  const [position, setPosition] = useState<string | undefined>();
   const [prop, setProp] = useState("kills");
   const [maps, setMaps] = useState("1-2");
   const [line, setLine] = useState(6.5);
@@ -59,7 +60,7 @@ export default function Explorer() {
     }, 250);
   }, [query, player]);
 
-  const run = async (p = player) => {
+  const run = async (p = player, pos = position) => {
     if (!p) return;
     setLoading(true);
     setError(null);
@@ -71,6 +72,7 @@ export default function Explorer() {
           prop,
           maps,
           opponentTeam: opponent || undefined,
+          position: pos,
         })
       );
     } catch (e) {
@@ -125,9 +127,10 @@ export default function Explorer() {
                       className="search-item"
                       onClick={() => {
                         setPlayer(h.player);
+                        setPosition(h.position);
                         setQuery(h.player);
                         setShowDrop(false);
-                        run(h.player);
+                        run(h.player, h.position);
                       }}
                     >
                       <span>{h.player}</span>
@@ -184,7 +187,8 @@ export default function Explorer() {
         {pred && (
           <div className="card">
             <h3>
-              {pred.player} · {pred.prop} maps {pred.maps} · line {pred.line}
+              {pred.player}
+              {position ? ` (${position})` : ""} · {pred.prop} maps {pred.maps} · line {pred.line}
             </h3>
             <div className={`pred-side ${over ? "over" : "under"}`}>
               {pred.prediction} {pct(pred.side_probability)}

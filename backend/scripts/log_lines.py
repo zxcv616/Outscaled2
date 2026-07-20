@@ -41,9 +41,18 @@ LOG_COLUMNS_KEY = ["snapshot_ts", "source", "line_id"]
 
 
 def build_player_index(games: pd.DataFrame) -> pd.DataFrame:
-    """Latest team/position per player, for name matching and opponent lookup."""
+    """Latest team + modal recent position per player, for matching and
+    prediction. Position uses the mode of the last 20 games so a one-off
+    role flex doesn't misfilter the history (matches backtest behavior)."""
     recent = games.sort_values("date").groupby("playername").tail(1)
-    idx = recent[["playername", "teamid", "teamname", "position", "date"]].copy()
+    idx = recent[["playername", "teamid", "teamname", "date"]].copy()
+    modal_pos = (
+        games.sort_values("date")
+        .groupby("playername")["position"]
+        .agg(lambda p: p.tail(20).mode().iat[0])
+        .rename("position")
+    )
+    idx = idx.merge(modal_pos, on="playername")
     idx["name_lower"] = idx["playername"].str.lower()
     # If two players share a name, keep the most recently active one.
     idx = idx.sort_values("date").groupby("name_lower").tail(1)
@@ -186,8 +195,10 @@ def main():
         opponent = resolve_opponent(row.match_title, info["teamid"], team_index)
         rec["team_ok"] = team_consistent(row.match_title, info["teamid"], team_index)
         model = models[(row.prop_type, row.map_lo, row.map_hi)]
+        # position filter matches the validated backtest configuration
         pred = model.predict(
-            info["playername"], row.line, opponent_teamid=opponent, n_bootstrap=0
+            info["playername"], row.line, opponent_teamid=opponent,
+            position=info["position"], n_bootstrap=0,
         )
         if pred is None:
             records.append(rec)

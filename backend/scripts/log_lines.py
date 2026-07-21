@@ -166,12 +166,23 @@ def main():
     player_index = build_player_index(games)
     team_index = build_team_index(games)
 
+    # Opt-in Platt recalibration (present only after fit_calibration.py runs).
+    calibration = None
+    calib_path = os.path.join(args.data_dir, "calibration.json")
+    if os.path.exists(calib_path):
+        import json
+
+        with open(calib_path) as f:
+            c = json.load(f)
+        calibration = (c["a"], c["b"])
+        logger.info("Applying calibration (a=%.4f, b=%.4f)", c["a"], c["b"])
+
     # One model per (prop_type, map_range) present on the board.
     models: dict[tuple, PropsModel] = {}
     for prop_type, lo, hi in board[["prop_type", "map_lo", "map_hi"]].drop_duplicates().itertuples(index=False):
         totals = build_series_totals(games, prop_type, (lo, hi))
         models[(prop_type, lo, hi)] = PropsModel(
-            totals, kill_env=kill_env, opponent_adjust=True
+            totals, kill_env=kill_env, opponent_adjust=True, calibration=calibration
         )
 
     records = []

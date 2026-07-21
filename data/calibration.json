@@ -1,0 +1,20 @@
+{
+  "a": 0.88132,
+  "b": 0.06202,
+  "fit_on": "kills_maps_1-2",
+  "n": 38730,
+  "validation": {
+    "raw": {
+      "brier": 0.2277,
+      "log_loss": 0.6476,
+      "bias": -0.013,
+      "tail_gap": -0.028
+    },
+    "calibrated": {
+      "brier": 0.2275,
+      "log_loss": 0.6467,
+      "bias": 0.01,
+      "tail_gap": -0.002
+    }
+  }
+}

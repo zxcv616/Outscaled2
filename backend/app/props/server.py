@@ -31,6 +31,18 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")
 DATA_DIR = os.environ.get("PROPS_DATA_DIR", os.path.join(_REPO_ROOT, "data"))
 LINES_LOG = os.path.join(DATA_DIR, "lines", "lines_log.csv")
 LINES_GRADED = os.path.join(DATA_DIR, "lines", "lines_graded.csv")
+CALIBRATION_FILE = os.path.join(DATA_DIR, "calibration.json")
+
+
+def load_calibration() -> tuple[float, float] | None:
+    """Read the opt-in Platt correction, if fit_calibration.py has written it."""
+    if not os.path.exists(CALIBRATION_FILE):
+        return None
+    import json
+
+    with open(CALIBRATION_FILE) as f:
+        c = json.load(f)
+    return (c["a"], c["b"])
 FRONTEND_DIST = os.environ.get(
     "PROPS_FRONTEND_DIST", os.path.join(os.path.dirname(__file__), "../../../frontend/dist")
 )
@@ -63,7 +75,10 @@ def _load():
 @lru_cache(maxsize=12)
 def get_model(prop_type: str, lo: int, hi: int) -> PropsModel:
     totals = build_series_totals(state.games, prop_type, (lo, hi))
-    return PropsModel(totals, kill_env=state.kill_env, opponent_adjust=True)
+    return PropsModel(
+        totals, kill_env=state.kill_env, opponent_adjust=True,
+        calibration=load_calibration(),
+    )
 
 
 def _parse_maps(maps: str) -> tuple[int, int]:

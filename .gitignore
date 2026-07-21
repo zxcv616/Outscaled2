@@ -485,3 +485,4 @@ claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
 !data/lines/*.csv
+!data/calibration.json

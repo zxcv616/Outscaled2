@@ -79,16 +79,22 @@ class PropsModel:
         self,
         series_totals: pd.DataFrame,
         kill_env: pd.DataFrame | None = None,
-        half_life_days: float = 120.0,
+        half_life_days: float = 150.0,
         blend_k: float = 6.0,
         opponent_adjust: bool = False,
         opponent_window: int = 20,
+        calibration: tuple[float, float] | None = None,
         rng_seed: int = 7,
     ):
+        # calibration = (a, b): a Platt correction on the logit of p_over,
+        # p_cal = sigmoid(a * logit(p_over) + b). None = identity (raw model).
+        # Fit out-of-sample via fit_calibration(); corrects a small residual
+        # under-lean in the confident-UNDER tail. See docs/algorithmic_review.md.
         self.half_life_days = half_life_days
         self.blend_k = blend_k
         self.opponent_adjust = opponent_adjust
         self.opponent_window = opponent_window
+        self.calibration = calibration
         self.rng = np.random.default_rng(rng_seed)
 
         self._players: dict[str, PlayerHistory] = {}
@@ -248,6 +254,14 @@ class PropsModel:
         w_emp = n_eff / (n_eff + self.blend_k)
         p_over = w_emp * p_emp + (1.0 - w_emp) * p_nb
         p_over = float(np.clip(p_over, 0.01, 0.99))
+        p_raw = p_over
+
+        # Optional Platt recalibration on the logit (identity if unset).
+        if self.calibration is not None:
+            a, b = self.calibration
+            logit = np.log(p_over / (1.0 - p_over))
+            p_over = float(1.0 / (1.0 + np.exp(-(a * logit + b))))
+            p_over = float(np.clip(p_over, 0.01, 0.99))
 
         # True bootstrap for the CI of the mean: resample actual series totals.
         # Skipped (NaN CI) when n_bootstrap=0, e.g. inside the backtest loop.
@@ -283,7 +297,10 @@ class PropsModel:
             n_series=int(len(totals)),
             n_effective=n_eff,
             opponent_factor=factor,
-            components={"p_empirical": p_emp, "p_negbinom": p_nb, "w_empirical": w_emp},
+            components={
+                "p_empirical": p_emp, "p_negbinom": p_nb,
+                "w_empirical": w_emp, "p_raw": p_raw,
+            },
         )
 
     def history_quantiles(
@@ -320,3 +337,26 @@ def _weighted_quantiles(
     cw = np.cumsum(weights[order])
     cw = cw / cw[-1]
     return tuple(float(np.interp(q, cw, v)) for q in qs)
+
+
+def fit_calibration(
+    raw_p: np.ndarray, outcomes: np.ndarray, iters: int = 400, lr: float = 0.3
+) -> tuple[float, float]:
+    """Fit a Platt (a, b) correction: p_cal = sigmoid(a*logit(p) + b).
+
+    Minimizes log loss by gradient descent (no sklearn dependency). Fit this
+    on data STRICTLY OLDER than what you predict on, then pass the result as
+    PropsModel(calibration=(a, b)); otherwise the correction leaks.
+    """
+    p = np.clip(np.asarray(raw_p, dtype=float), 1e-6, 1 - 1e-6)
+    y = np.asarray(outcomes, dtype=float)
+    x = np.log(p / (1 - p))
+    a, b = 1.0, 0.0
+    n = len(x)
+    for _ in range(iters):
+        z = a * x + b
+        pred = 1.0 / (1.0 + np.exp(-z))
+        err = pred - y
+        a -= lr * float(np.dot(err, x)) / n
+        b -= lr * float(err.mean())
+    return a, b

@@ -41,6 +41,9 @@ export default function Performance() {
       <div className="sub">
         Games played, outcome not yet graded — refresh the Oracle's Elixir CSV
         in <code>data/</code> and the 12:30 grading run scores these.
+        {data.n_voided > 0
+          ? ` ${data.n_voided} other pick${data.n_voided === 1 ? "" : "s"} voided (player did not play).`
+          : ""}
       </div>
       <div className="table-wrap">
         <table>
@@ -133,7 +136,10 @@ export default function Performance() {
         <div className="tile">
           <div className="label">Pending grading</div>
           <div className="value">{data.n_pending}</div>
-          <div className="hint">awaiting outcome data</div>
+          <div className="hint">
+            awaiting outcome data
+            {data.n_voided > 0 ? ` · ${data.n_voided} voided (DNP)` : ""}
+          </div>
         </div>
       </div>
       {pendingCard}

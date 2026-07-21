@@ -213,8 +213,21 @@ PENDING_COLS = [
 ]
 
 
+def _resolved_ids() -> tuple[set, int]:
+    """(line_ids that are graded or voided, count of DNP-voided)."""
+    if not os.path.exists(LINES_GRADED):
+        return set(), 0
+    graded = pd.read_csv(LINES_GRADED)
+    done_ids = set(graded.loc[graded["outcome_over"].notna(), "line_id"])
+    if "voided" in graded.columns:
+        void_ids = set(graded.loc[graded["voided"] == True, "line_id"])  # noqa: E712
+    else:
+        void_ids = set()
+    return done_ids | void_ids, len(void_ids)
+
+
 def _pending() -> list[dict]:
-    """Past-game lines awaiting an outcome (grader hasn't matched them yet)."""
+    """Past-game lines still awaiting an outcome (not yet graded or voided)."""
     log = _deduped_log()
     if log is None or log.empty:
         return []
@@ -224,12 +237,8 @@ def _pending() -> list[dict]:
     ].copy()
     if past.empty:
         return []
-    if os.path.exists(LINES_GRADED):
-        graded = pd.read_csv(LINES_GRADED)
-        graded_ids = set(
-            graded.loc[graded["outcome_over"].notna(), "line_id"]
-        )
-        past = past[~past["line_id"].isin(graded_ids)]
+    resolved_ids, _ = _resolved_ids()
+    past = past[~past["line_id"].isin(resolved_ids)]
     past = past.sort_values("game_dt", ascending=False).head(100)
     return past[PENDING_COLS].replace({np.nan: None}).to_dict("records")
 
@@ -237,9 +246,10 @@ def _pending() -> list[dict]:
 @app.get("/api/performance")
 def performance():
     pending = _pending()
+    _, n_voided = _resolved_ids()
     empty = {
-        "n_graded": 0, "n_pending": len(pending), "pending": pending,
-        "buckets": [], "calibration": [], "recent": [],
+        "n_graded": 0, "n_pending": len(pending), "n_voided": n_voided,
+        "pending": pending, "buckets": [], "calibration": [], "recent": [],
     }
     if not os.path.exists(LINES_GRADED):
         return empty
@@ -286,6 +296,7 @@ def performance():
     return {
         "n_graded": int(len(done)),
         "n_pending": len(pending),
+        "n_voided": n_voided,
         "pending": pending,
         "brier": round(float(np.mean((p - y) ** 2)), 4),
         "overall_hit_rate": round(float(done["side_hit"].mean()), 3),

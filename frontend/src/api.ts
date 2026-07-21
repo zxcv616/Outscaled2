@@ -78,6 +78,7 @@ export interface PendingPick {
 export interface PerformanceResponse {
   n_graded: number;
   n_pending: number;
+  n_voided: number;
   pending: PendingPick[];
   brier?: number;
   overall_hit_rate?: number;

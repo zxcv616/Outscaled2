@@ -57,7 +57,9 @@ picks (per-leg break-even on a 2-pick 3x entry is 57.7%).
 ## Running
 
 ```bash
-# dashboard (API + built frontend on one port)
+# dashboard (API + built frontend on one port). On boot it auto-pulls today's
+# board and re-grades against the CSVs in a background thread, so just starting
+# it brings everything up to date. Set PROPS_REFRESH_ON_BOOT=0 to skip.
 cd backend && venv/bin/uvicorn app.props.server:app --port 8010
 
 # frontend dev server (hot reload, proxies /api to :8010)

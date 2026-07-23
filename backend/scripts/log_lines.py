@@ -250,31 +250,34 @@ def main():
         )
         records.append(rec)
 
-    out = pd.DataFrame(records)
+    new_df = pd.DataFrame(records)
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     # Append via read+concat so a schema change (new column) can never
     # corrupt the log; missing columns in old rows become NaN.
+    out = new_df
     if os.path.exists(args.out):
         existing = pd.read_csv(args.out)
-        out = pd.concat([existing, out], ignore_index=True)
+        out = pd.concat([existing, new_df], ignore_index=True)
     out.to_csv(args.out, index=False)
     logger.info(
         "Logged %s new lines (%s matched to model, %s unmatched) -> %s (%s total)",
-        len(records),
-        pd.DataFrame(records)["matched_player"].notna().sum(),
+        len(records), new_df["matched_player"].notna().sum(),
         n_unmatched, args.out, len(out),
     )
 
-    n_team_bad = int((out["matched_player"].notna() & ~out["team_ok"]).sum())
+    # Summary/picks reflect THIS snapshot only (new_df), never the whole log -
+    # keeps team_ok a clean bool and the printed picks scoped to the live board.
+    team_ok = new_df["team_ok"].fillna(False).astype(bool)
+    n_team_bad = int((new_df["matched_player"].notna() & ~team_ok).sum())
     if n_team_bad:
         logger.warning(
             "%s matched lines failed the team-consistency check (possible name "
             "collision) - excluded from picks", n_team_bad,
         )
-    picks = out[
-        (out["best_edge"] >= args.min_edge)
-        & out["matched_player"].notna()
-        & out["team_ok"]
+    picks = new_df[
+        (new_df["best_edge"] >= args.min_edge)
+        & new_df["matched_player"].notna()
+        & team_ok
     ]
     picks = picks.sort_values("best_edge", ascending=False)
     if picks.empty:

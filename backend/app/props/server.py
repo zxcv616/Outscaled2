@@ -1,7 +1,10 @@
 """
 FastAPI server for the props dashboard.
 
-Serves the model API and (when built) the frontend's static bundle.
+Serves the model API and (when built) the frontend's static bundle. On boot it
+loads the current CSVs, then in a background thread pulls today's board and
+re-grades against the data (so just starting the server brings everything
+up to date). Disable the refresh with PROPS_REFRESH_ON_BOOT=0.
 
 Run from backend/:
   venv/bin/uvicorn app.props.server:app --port 8010
@@ -9,6 +12,7 @@ Run from backend/:
 
 import logging
 import os
+import sys
 from functools import lru_cache
 
 import numpy as np
@@ -26,6 +30,8 @@ from app.props.data import (
 from app.props.model import MIN_SERIES_FOR_PREDICTION, PropsModel
 
 logger = logging.getLogger(__name__)
+# Route boot-refresh status through uvicorn's logger so it shows on the console.
+boot_logger = logging.getLogger("uvicorn.error")
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 DATA_DIR = os.environ.get("PROPS_DATA_DIR", os.path.join(_REPO_ROOT, "data"))
@@ -62,14 +68,65 @@ class _State:
 state = _State()
 
 
-@app.on_event("startup")
-def _load():
+def _load_data():
     games = load_games(DATA_DIR)
     state.games = attach_series(games)
     state.kill_env = build_team_kill_environment(state.games)
     recent = state.games.sort_values("date").groupby("playername").tail(1)
-    state.player_index = recent[["playername", "teamname", "teamid", "position", "league", "date"]]
-    logger.info("Server data loaded: %s rows", len(state.games))
+    state.player_index = recent[
+        ["playername", "teamname", "teamid", "position", "league", "date"]
+    ]
+    logger.info(
+        "Server data loaded: %s rows (latest match %s)",
+        len(state.games), state.games["date"].max(),
+    )
+
+
+def _boot_refresh():
+    """Pull today's board and re-grade against the current CSV, then reload.
+
+    Runs in a background thread so the server is available immediately and a
+    network stall on the line fetch never blocks startup. Skip with
+    PROPS_REFRESH_ON_BOOT=0. Each step is isolated: a failure in one is logged
+    and does not stop the others.
+    """
+    import subprocess
+
+    scripts_dir = os.path.join(os.path.dirname(__file__), "../../scripts")
+    common = ["--data-dir", DATA_DIR]
+    steps = (
+        ("line fetch", "log_lines.py", common + ["--out", LINES_LOG]),
+        ("grading", "grade_lines.py", common + ["--log", LINES_LOG, "--out", LINES_GRADED]),
+    )
+    for label, script, extra in steps:
+        try:
+            boot_logger.info("Boot refresh: running %s ...", label)
+            r = subprocess.run(
+                [sys.executable, os.path.join(scripts_dir, script), *extra],
+                capture_output=True, text=True, timeout=300,
+            )
+            tail = (r.stdout or r.stderr or "").strip().splitlines()
+            if tail:
+                boot_logger.info("Boot refresh %s: %s", label, tail[-1])
+        except Exception as e:  # noqa: BLE001 - never let refresh crash the server
+            boot_logger.warning("Boot refresh %s failed: %s", label, e)
+
+    try:
+        _load_data()  # pick up any newly graded/updated CSV in memory
+        get_model.cache_clear()
+        boot_logger.info("Boot refresh complete; data reloaded.")
+    except Exception as e:  # noqa: BLE001
+        boot_logger.warning("Boot refresh reload failed: %s", e)
+
+
+@app.on_event("startup")
+def _startup():
+    _load_data()
+    if os.environ.get("PROPS_REFRESH_ON_BOOT", "1") != "0":
+        import threading
+
+        threading.Thread(target=_boot_refresh, daemon=True).start()
+        boot_logger.info("Boot refresh started in background (set PROPS_REFRESH_ON_BOOT=0 to skip).")
 
 
 @lru_cache(maxsize=12)

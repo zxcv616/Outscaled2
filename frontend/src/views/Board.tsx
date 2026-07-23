@@ -18,7 +18,19 @@ export default function Board() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    fetchBoard().then(setData).catch((e) => setError(String(e)));
+    // Poll so a background boot-refresh (which takes ~1 min to fetch + grade)
+    // shows up without a manual reload.
+    let alive = true;
+    const load = () =>
+      fetchBoard()
+        .then((d) => alive && setData(d))
+        .catch((e) => alive && setError(String(e)));
+    load();
+    const id = setInterval(load, 20000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
   }, []);
 
   const rows = useMemo(() => {

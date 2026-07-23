@@ -29,7 +29,19 @@ export default function Performance() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchPerformance().then(setData).catch((e) => setError(String(e)));
+    // Poll so a background boot-refresh (fetch + grade, ~1 min) updates the
+    // graded/pending counts without a manual reload.
+    let alive = true;
+    const load = () =>
+      fetchPerformance()
+        .then((d) => alive && setData(d))
+        .catch((e) => alive && setError(String(e)));
+    load();
+    const id = setInterval(load, 20000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
   }, []);
 
   if (error) return <div className="error">Performance unavailable: {error}</div>;
